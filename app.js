@@ -28,6 +28,26 @@ const PRESETS = [
     author: "音乐剧观察员", public: true, plays: 4196,
     championStats: { "Turn It Off": 1132, "I Believe": 987, "Hello!": 621 },
     items: ["Hello!", "Two by Two", "You and Me (But Mostly Me)", "Hasa Diga Eebowai", "Turn It Off", "I Am Here for You", "All-American Prophet", "Sal Tlay Ka Siti", "Man Up", "Making Things Up Again", "Spooky Mormon Hell Dream", "I Believe", "Baptize Me", "I Am Africa", "Joseph Smith American Moses", "Tomorrow Is a Latter Day"]
+  },
+  {
+    id: "fandom-right-position",
+    remoteId: "44444444-4444-4444-8444-444444444444",
+    title: "同人女右位 XP 二选一",
+    emoji: "➡️",
+    description: "48 种角色属性 · 选出你的右位终极 XP",
+    author: "xhs@一只不眠喵", public: true, plays: 0,
+    championStats: {},
+    items: ["轻浮佬", "重力系", "小太阳", "冰山", "傲娇", "直球", "高敏", "娇纵", "黑切白", "白切黑", "天然呆", "三无", "心机", "嘴毒", "病弱", "身强体壮", "美人", "糙汉", "失眠症", "嗜睡", "中二病", "电竞", "恋旧", "喜新厌旧", "黏人", "回避", "温和", "无情", "冷脸萌", "热脸蛋", "成熟", "幼稚", "高情商", "低情商", "s", "m", "自私", "无私", "隐忍", "放纵", "自恋", "自卑", "绿茶", "海王", "颜控", "醋精", "霸总", "暴君"]
+  },
+  {
+    id: "fandom-left-position",
+    remoteId: "55555555-5555-4555-8555-555555555555",
+    title: "同人女左位 XP 二选一",
+    emoji: "⬅️",
+    description: "48 种角色属性 · 选出你的左位终极 XP",
+    author: "xhs@一只不眠喵", public: true, plays: 0,
+    championStats: {},
+    items: ["轻浮佬", "重力系", "小太阳", "冰山", "傲娇", "直球", "高敏", "娇纵", "黑切白", "白切黑", "天然呆", "三无", "心机", "嘴毒", "病弱", "身强体壮", "美人", "糙汉", "失眠症", "嗜睡", "中二病", "电竞", "恋旧", "喜新厌旧", "黏人", "回避", "温和", "无情", "冷脸萌", "热脸蛋", "成熟", "幼稚", "高情商", "低情商", "s", "m", "自私", "无私", "隐忍", "放纵", "自恋", "自卑", "绿茶", "海王", "颜控", "醋精", "霸总", "暴君"]
   }
 ];
 
