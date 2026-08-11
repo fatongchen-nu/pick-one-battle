@@ -129,7 +129,11 @@ button { color: inherit; }
 .result-kicker { margin: 18px 0 5px; font-weight: 700; opacity: .85; }
 .result-hero h1 { font-size: clamp(52px,9vw,106px); line-height: 1; max-width: 960px; letter-spacing: -.065em; margin: 22px 0; text-shadow: 5px 5px 0 var(--ink); overflow-wrap: anywhere; }
 .result-path { max-width: 620px; line-height: 1.65; opacity: .8; }
-.result-actions { margin-top: 28px; }.white-button { background: white; color: var(--ink); box-shadow: 4px 4px 0 var(--ink); }.outline-light-button { border-color: white; background: transparent; color: white; box-shadow: 4px 4px 0 var(--ink); }
+.filler-row { margin-top: 26px; display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.16); border: 1.5px solid white; border-radius: 3px; padding: 8px 12px; box-shadow: 4px 4px 0 var(--ink); }
+.filler-row label { font-weight: 800; font-size: 14px; white-space: nowrap; letter-spacing: .01em; }
+.filler-row input { background: white; color: var(--ink); border: 0; border-radius: 2px; padding: 8px 10px; font-size: 14px; font-weight: 700; width: min(200px, 46vw); outline: none; }
+.filler-row input::placeholder { color: #9a938a; font-weight: 500; }
+.result-actions { margin-top: 22px; }.white-button { background: white; color: var(--ink); box-shadow: 4px 4px 0 var(--ink); }.outline-light-button { border-color: white; background: transparent; color: white; box-shadow: 4px 4px 0 var(--ink); }
 .white-button:hover, .outline-light-button:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
 .play-again { margin-top: 24px; background: transparent; color: white; border: 0; border-bottom: 1px solid white; cursor: pointer; padding: 5px; }
 .result-bracket-wrap { max-width: 1200px; margin: auto; padding: 75px 24px 90px; text-align: left; }

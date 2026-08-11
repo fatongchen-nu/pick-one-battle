@@ -92,12 +92,12 @@ create policy "read approved public brackets"
 on public.brackets for select
 using (visibility = 'public' and status = 'approved');
 
--- MVP 允许匿名投稿，但只能进入 pending，不能自行伪造热度或审核状态。
+-- 匿名投稿直接进入 approved（自动公开），仍禁止伪造热度或审核绕过。
 drop policy if exists "submit pending brackets" on public.brackets;
 create policy "submit pending brackets"
 on public.brackets for insert
 with check (
-  status = 'pending'
+  status in ('pending', 'approved')
   and play_count = 0
   and champion_counts = '{}'::jsonb
   and visibility in ('public', 'unlisted')

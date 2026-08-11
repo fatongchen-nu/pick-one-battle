@@ -325,6 +325,7 @@ function showResult(options = {}) {
   $("#resultPath").textContent = defeated.length ? `一路击败 ${defeated.join("、")}，成功登顶。` : `经过 ${game.completedChoices} 次艰难选择，成功登顶。`;
   $("#resultAuthor").textContent = game.theme.author || "匿名玩家";
   $("#resultDate").textContent = new Intl.DateTimeFormat("zh-CN", { year:"numeric", month:"long", day:"numeric" }).format(new Date());
+  try { const f = $("#fillerName"); if (f) f.value = localStorage.getItem("pickone-filler") || ""; } catch {}
   renderResultBracket();
   if (!game.recorded && !options.fromShare) {
     game.recorded = true;
@@ -548,57 +549,36 @@ async function downloadCard() {
   const L = rounds.length;
   const N = rounds[0].length;
   const champ = rounds.at(-1)[0];
+  const filler = ((($("#fillerName") || {}).value) || "").trim();
+  const author = game.theme.author || "";
+  const dateStr = new Intl.DateTimeFormat("zh-CN", { year: "numeric", month: "long", day: "numeric" }).format(new Date());
 
-  // 上下分半：决赛两位对手各领一棵子树，从上下两端向中央的冠军收拢（竖屏）
-  const k = Math.min(2 ** (L - 2), N);     // 上半叶子数（初始名单前 k 个）
-  const kL = k, kR = N - k, M = Math.max(kL, kR);
-
-  // ---- 深色·懂球帝淘汰赛配色 ----
+  // ---- 浅色报纸风（与结果页「完整晋级路线」一致）----
   const C = {
-    bg: "#2b2f38", header: "#20232b", accent: "#ff5c35",
-    winFill: "rgba(255,92,53,.15)", winText: "#ffffff", winBorder: "#ff5c35",
-    loseFill: "#353a45", loseText: "rgba(255,255,255,.5)", loseBorder: "rgba(255,255,255,.07)",
-    line: "rgba(255,255,255,.13)", label: "rgba(255,255,255,.4)", sub: "rgba(255,255,255,.62)"
+    paper: "#f6f0e6", ink: "#171716", orange: "#ff5c35", acid: "#d9f64f",
+    advBg: "#fff0eb", advText: "#b73318", slotBd: "#c5c5c5", colSep: "#b8b8b8",
+    white: "#ffffff", muted: "#746d63"
   };
 
-  const headerH = 232, padTop = 46, sideMargin = 44, labelW = 84, footerH = 178;
+  // 尺寸分档：选项越多，格子越小
+  let slotH, gap, font, champH, champFont;
+  if (N <= 16)      { slotH = 40; gap = 12; font = 15; champH = 60; champFont = 19; }
+  else if (N <= 32) { slotH = 36; gap = 9;  font = 14; champH = 56; champFont = 18; }
+  else if (N <= 64) { slotH = 30; gap = 6;  font = 12; champH = 48; champFont = 16; }
+  else              { slotH = 26; gap = 4;  font = 11; champH = 42; champFont = 14; }
+  const colHeadH = 50, colHeadFont = 14, slotPadX = 9;
+  const colW = L <= 5 ? 208 : L <= 7 ? 182 : 158;
 
-  // 尺寸分档：选手越多，框越小、字越小（之后还会为竖屏进一步收窄）
-  let bw, bh, hGap, font, rowGap;
-  if (M <= 8)       { bw = 152; bh = 46; hGap = 18; font = 16; rowGap = 60; }
-  else if (M <= 16) { bw = 122; bh = 40; hGap = 14; font = 14; rowGap = 62; }
-  else if (M <= 32) { bw = 98;  bh = 34; hGap = 10; font = 12; rowGap = 64; }
-  else if (M <= 48) { bw = 80;  bh = 30; hGap = 8;  font = 11; rowGap = 60; }
-  else              { bw = 66;  bh = 26; hGap = 6;  font = 10; rowGap = 54; }
-
-  // 由一组尺寸算出全部几何量
-  const geom = (bw, hGap, rowGap) => {
-    const leafStride = bw + hGap, rowStride = bh + rowGap;
-    const gapHalf = Math.round(rowGap * 0.55);
-    const champW = Math.max(Math.round(bw * 1.62), 168), champH = Math.max(Math.round(bh * 2.0), 60);
-    const bodyW = M * leafStride;
-    const contentLeft = sideMargin + labelW;
-    const W = sideMargin * 2 + labelW + bodyW, centerX = contentLeft + bodyW / 2;
-    const topBody = headerH + padTop;
-    const yTop = (r) => topBody + bh / 2 + r * rowStride;
-    const champY = yTop(L - 2) + (bh / 2 + gapHalf + champH / 2);
-    const yBotFinal = champY + (champH / 2 + gapHalf + bh / 2);
-    const yBot = (r) => yBotFinal + (L - 2 - r) * rowStride;
-    const H = yBot(0) + bh / 2 + footerH;
-    return { leafStride, rowStride, gapHalf, champW, champH, bodyW, contentLeft, W, centerX, yTop, champY, yBot, H };
-  };
-
-  // 竖屏保障：只要「宽 > 高 × 0.95」就先缩窄格宽（到下限 46），再持续拉大行距，直到画面变竖
-  let g = geom(bw, hGap, rowGap), guard = 0;
-  while (g.W > g.H * 0.95 && guard++ < 400) {
-    if (bw > 46) { bw -= 3; hGap = Math.max(4, hGap - 1); }
-    rowGap += 4;
-    g = geom(bw, hGap, rowGap);
-  }
-  const { leafStride, rowStride, champW, champH, bodyW, contentLeft, W, centerX, yTop, champY, yBot, H } = g;
+  const sideMargin = 46, headerH = 208, footerH = 156, shadow = 9;
+  const bodyW = L * colW, cardLeft = sideMargin;
+  const W = sideMargin * 2 + bodyW + shadow;
+  const bodyH = N * slotH + (N + 1) * gap;   // 首列（N 个选项）撑起的列内高度
+  const cardTop = headerH, bodyTop = cardTop + colHeadH;
+  const cardH = colHeadH + bodyH;
+  const H = cardTop + cardH + shadow + footerH;
   canvas.width = W; canvas.height = H;
 
-  // 文字自适应工具
+  // 文字工具
   const fitFont = (text, maxW, weight, startSize, minSize) => {
     let fs = startSize;
     for (; fs > minSize; fs--) { ctx.font = `${weight} ${fs}px sans-serif`; if (ctx.measureText(text).width <= maxW) break; }
@@ -610,134 +590,81 @@ async function downloadCard() {
     while (s.length > 1 && ctx.measureText(s + "…").width > maxW) s = s.slice(0, -1);
     return s + "…";
   };
-  const roundRect = (x, y, w, h, r) => {
-    ctx.beginPath(); ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
-  };
 
-  // ---- 背景与顶部标题带（深色）----
-  ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = C.header; ctx.fillRect(0, 0, W, headerH);
-  ctx.fillStyle = C.accent; ctx.fillRect(sideMargin, 46, 6, 150);
-  const textLeft = sideMargin + 24, headMaxW = W - textLeft - sideMargin;
-  ctx.textAlign = "left";
-  ctx.fillStyle = C.sub; ctx.font = "700 22px sans-serif";
-  ctx.fillText("极限二选一 · 淘汰赛", textLeft, 76);
-  const tfs = fitFont(game.theme.title, headMaxW, "900", 48, 24);
-  ctx.fillStyle = "#fff"; ctx.font = `900 ${tfs}px sans-serif`;
-  ctx.fillText(game.theme.title, textLeft, 138);
-  ctx.fillStyle = C.accent; ctx.font = "800 24px sans-serif";
-  ctx.fillText(truncate("🏆 冠军 · " + champ, headMaxW), textLeft, 192);
+  // ---- 背景与页眉 ----
+  ctx.fillStyle = C.paper; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = C.orange; ctx.fillRect(sideMargin, 40, 6, 132);
+  const textLeft = sideMargin + 22, headMaxW = W - textLeft - sideMargin;
+  ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = C.orange; ctx.font = "800 20px sans-serif";
+  ctx.fillText("极限二选一 · 完整晋级路线", textLeft, 66);
+  const tfs = fitFont(game.theme.title, headMaxW, "900", 46, 24);
+  ctx.fillStyle = C.ink; ctx.font = `900 ${tfs}px sans-serif`;
+  ctx.fillText(truncate(game.theme.title, headMaxW), textLeft, 118);
+  ctx.fillStyle = C.orange; ctx.font = "800 22px sans-serif";
+  ctx.fillText(truncate("🏆 冠军：" + champ, headMaxW), textLeft, 156);
+  const parts = [];
+  if (filler) parts.push("填表人 by " + filler);
+  if (author) parts.push("题库 by " + author);
+  parts.push(dateStr);
+  ctx.fillStyle = C.muted; ctx.font = "600 15px sans-serif";
+  ctx.fillText(truncate(parts.join("   ·   "), headMaxW), textLeft, 186);
 
-  // ---- 左侧轮次标签栏 ----
-  const roundName = (cnt) => cnt <= 1 ? "冠军" : cnt === 2 ? "决赛" : cnt === 4 ? "半决赛" : `${cnt}强`;
-  ctx.textAlign = "center"; ctx.fillStyle = C.label; ctx.font = "700 15px sans-serif";
-  const labelX = sideMargin + labelW / 2;
-  for (let r = 0; r <= L - 2; r++) {
-    const nm = roundName(rounds[r].length);
-    ctx.fillText(nm, labelX, yTop(r) + 5);
-    ctx.fillText(nm, labelX, yBot(r) + 5);
+  // ---- 白色对阵卡（硬阴影 + 墨线边框）----
+  ctx.fillStyle = C.ink; ctx.fillRect(cardLeft + shadow, cardTop + shadow, bodyW, cardH);
+  ctx.fillStyle = C.white; ctx.fillRect(cardLeft, cardTop, bodyW, cardH);
+
+  // 列分隔线 + 列头
+  ctx.textAlign = "center";
+  for (let c = 0; c < L; c++) {
+    const cx = cardLeft + c * colW;
+    if (c < L - 1) { ctx.strokeStyle = C.colSep; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cx + colW, cardTop); ctx.lineTo(cx + colW, cardTop + cardH); ctx.stroke(); }
+    const label = rounds[c].length === 1 ? "🏆 冠军" : roundName(rounds[c].length);
+    ctx.fillStyle = C.ink; ctx.font = `800 ${colHeadFont}px sans-serif`; ctx.textBaseline = "middle";
+    ctx.fillText(label, cx + colW / 2, cardTop + colHeadH / 2);
   }
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cardLeft, bodyTop); ctx.lineTo(cardLeft + bodyW, bodyTop); ctx.stroke();
 
-  // 位置表 pos[r][i] = {x, y(中心), side:'T'|'B'|'C'}
-  const pos = rounds.map(() => []);
-  const sideOf = (r, i) => (i * (2 ** r)) < k ? "T" : "B";
-  rounds[0].forEach((name, i) => {
-    const isT = i < k;
-    const x = isT ? contentLeft + (i + 0.5) * (bodyW / kL) : contentLeft + ((i - k) + 0.5) * (bodyW / kR);
-    pos[0][i] = { x, y: isT ? yTop(0) : yBot(0), side: isT ? "T" : "B" };
-  });
-  for (let r = 1; r <= L - 2; r++) {
-    rounds[r].forEach((name, i) => {
-      const kids = [pos[r - 1][2 * i], pos[r - 1][2 * i + 1]].filter(Boolean);
-      const s = sideOf(r, i);
-      pos[r][i] = { x: kids.map(c => c.x).reduce((a, b) => a + b, 0) / kids.length, y: s === "T" ? yTop(r) : yBot(r), side: s };
+  // ---- 选手格（space-around 竖向分布，胜者橙、冠军酸绿）----
+  ctx.textBaseline = "middle";
+  for (let c = 0; c < L; c++) {
+    const cx = cardLeft + c * colW, m = rounds[c].length;
+    rounds[c].forEach((name, i) => {
+      const yC = bodyTop + bodyH * (i + 0.5) / m;
+      const isChamp = c === L - 1;
+      const adv = !isChamp && (rounds[c + 1] || []).includes(name);
+      const h = isChamp ? champH : slotH, w = colW - 2 * slotPadX, x = cx + slotPadX;
+      ctx.fillStyle = isChamp ? C.acid : adv ? C.advBg : C.white;
+      ctx.fillRect(x, yC - h / 2, w, h);
+      ctx.strokeStyle = isChamp ? C.ink : adv ? C.orange : C.slotBd;
+      ctx.lineWidth = isChamp ? 2 : 1;
+      ctx.strokeRect(x, yC - h / 2, w, h);
+      ctx.fillStyle = isChamp ? C.ink : adv ? C.advText : C.ink;
+      const fs = isChamp ? champFont : font;
+      ctx.font = `${isChamp ? 900 : adv ? 800 : 500} ${fs}px sans-serif`;
+      ctx.fillText(truncate(name, w - 12), cx + colW / 2, yC + 1);
     });
   }
-  pos[L - 1][0] = { x: centerX, y: champY, side: "C" };
+  // 卡片外框（盖在最上层）
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.strokeRect(cardLeft, cardTop, bodyW, cardH);
 
-  // ---- 连线（胜者路线高亮橙色，淘汰者淡白）----
-  for (let r = 1; r <= L - 2; r++) {
-    rounds[r].forEach((name, i) => {
-      const parent = pos[r][i];
-      const kids = [pos[r - 1][2 * i], pos[r - 1][2 * i + 1]].filter(Boolean);
-      const isT = parent.side === "T";
-      const junctionY = isT ? parent.y - rowGap / 2 : parent.y + rowGap / 2;
-      if (kids.length === 2) {
-        ctx.beginPath(); ctx.moveTo(kids[0].x, junctionY); ctx.lineTo(kids[1].x, junctionY);
-        ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.stroke();
-      }
-      kids.forEach((c, ci) => {
-        const won = rounds[r][i] === rounds[r - 1][2 * i + ci];
-        const childInner = isT ? c.y + bh / 2 : c.y - bh / 2;
-        ctx.beginPath(); ctx.moveTo(c.x, childInner); ctx.lineTo(c.x, junctionY);
-        ctx.strokeStyle = won ? C.accent : C.line; ctx.lineWidth = won ? 2.5 : 1; ctx.stroke();
-      });
-      const parentInner = isT ? parent.y - bh / 2 : parent.y + bh / 2;
-      ctx.beginPath(); ctx.moveTo(parent.x, junctionY); ctx.lineTo(parent.x, parentInner);
-      ctx.strokeStyle = C.accent; ctx.lineWidth = 2.5; ctx.stroke();
-    });
-  }
-  // 决赛 → 冠军
-  const f0 = pos[L - 2][0], f1 = pos[L - 2][1], winnerIsF0 = rounds[L - 2][0] === champ;
-  [[f0, f0.y + bh / 2, champY - champH / 2, winnerIsF0], [f1, f1.y - bh / 2, champY + champH / 2, !winnerIsF0]]
-    .forEach(([f, fInner, champEdge, won]) => {
-      ctx.beginPath(); ctx.moveTo(f.x, fInner); ctx.lineTo(f.x, champEdge); ctx.lineTo(centerX, champEdge);
-      ctx.strokeStyle = won ? C.accent : C.line; ctx.lineWidth = won ? 3 : 1.5; ctx.stroke();
-    });
-
-  // ---- 画框 ----
-  const drawBox = (x, y, w, h, name, champion, advanced) => {
-    if (champion) {
-      ctx.save();
-      ctx.shadowColor = "rgba(255,92,53,.5)"; ctx.shadowBlur = 26;
-      roundRect(x - w / 2, y - h / 2, w, h, 14); ctx.fillStyle = C.accent; ctx.fill();
-      ctx.restore();
-      roundRect(x - w / 2, y - h / 2, w, h, 14);
-      ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,.85)"; ctx.stroke();
-      const text = "🏆 " + name;
-      const fs = fitFont(text, w - 26, "900", Math.round(champH * 0.46), 15);
-      ctx.font = `900 ${fs}px sans-serif`; ctx.fillStyle = "#fff"; ctx.textAlign = "center";
-      ctx.fillText(text, x, y + fs * 0.34);
-      return;
-    }
-    ctx.fillStyle = advanced ? C.winFill : C.loseFill;
-    ctx.fillRect(x - w / 2, y - h / 2, w, h);
-    ctx.lineWidth = advanced ? 1.5 : 1;
-    ctx.strokeStyle = advanced ? C.winBorder : C.loseBorder;
-    ctx.strokeRect(x - w / 2, y - h / 2, w, h);
-    if (advanced) { ctx.fillStyle = C.accent; ctx.fillRect(x - w / 2, y - h / 2, 3, h); }
-    ctx.fillStyle = advanced ? C.winText : C.loseText; ctx.textAlign = "center";
-    ctx.font = `${advanced ? 700 : 500} ${font}px sans-serif`;
-    ctx.fillText(truncate(name, w - 16), x, y + font * 0.34);
-  };
-  for (let r = 0; r <= L - 2; r++) {
-    rounds[r].forEach((name, i) => drawBox(pos[r][i].x, pos[r][i].y, bw, bh, name, false, (rounds[r + 1] || []).includes(name)));
-  }
-  drawBox(centerX, champY, champW, champH, champ, true, false);
-  ctx.fillStyle = C.sub; ctx.font = "700 15px sans-serif"; ctx.textAlign = "center";
-  ctx.fillText("总冠军", centerX, champY - champH / 2 - 10);
-
-  // ---- 底部二维码 + 网址（深色底，二维码加白垫确保可扫）----
+  // ---- 底部二维码 + 网址 ----
   const qr = await qrImagePromise;
-  const qrS = 104, footTop = yBot(0) + bh / 2 + 40;
-  ctx.textAlign = "left"; ctx.font = "800 23px sans-serif";
-  const w1 = ctx.measureText("扫码来玩").width;
-  ctx.font = "700 19px sans-serif"; const w2 = ctx.measureText("pick-one-battle.vercel.app").width;
-  const groupW = qrS + 20 + Math.max(w1, w2), gx = centerX - groupW / 2, tx = gx + qrS + 20;
+  const qrS = 100, footTop = cardTop + cardH + shadow + 22;
+  ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
+  ctx.font = "800 22px sans-serif"; const w1 = ctx.measureText("扫码来玩").width;
+  ctx.font = "700 18px sans-serif"; const w2 = ctx.measureText("pick-one-battle.vercel.app").width;
+  const groupW = qrS + 18 + Math.max(w1, w2), gx = W / 2 - groupW / 2, tx = gx + qrS + 18;
   if (qr) {
-    ctx.fillStyle = "#fff"; roundRect(gx - 8, footTop - 8, qrS + 16, qrS + 16, 10); ctx.fill();
+    ctx.fillStyle = C.white; ctx.fillRect(gx - 6, footTop - 6, qrS + 12, qrS + 12);
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.strokeRect(gx - 6, footTop - 6, qrS + 12, qrS + 12);
     ctx.drawImage(qr, gx, footTop, qrS, qrS);
   }
-  ctx.fillStyle = "#fff"; ctx.font = "800 23px sans-serif"; ctx.textAlign = "left";
-  ctx.fillText("扫码来玩", tx, footTop + 46);
-  ctx.fillStyle = C.accent; ctx.font = "700 19px sans-serif";
-  ctx.fillText("pick-one-battle.vercel.app", tx, footTop + 78);
+  ctx.fillStyle = C.ink; ctx.font = "800 22px sans-serif"; ctx.fillText("扫码来玩", tx, footTop + 42);
+  ctx.fillStyle = C.orange; ctx.font = "700 18px sans-serif"; ctx.fillText("pick-one-battle.vercel.app", tx, footTop + 72);
 
   saveCanvas(canvas, `极限二选一-${champ}.png`);
 }
-
 function showToast(message) {
   clearTimeout(toastTimer); $("#toast").textContent = message; $("#toast").classList.add("show");
   toastTimer = setTimeout(() => $("#toast").classList.remove("show"), 2200);
@@ -759,6 +686,7 @@ $("#choiceB").addEventListener("click", () => choose(1));
 $("#undoButton").addEventListener("click", undo);
 $("#playAgainButton").addEventListener("click", replay);
 $("#downloadButton").addEventListener("click", downloadCard);
+$("#fillerName")?.addEventListener("input", e => { try { localStorage.setItem("pickone-filler", e.target.value.trim()); } catch {} });
 $("#shareButton").addEventListener("click", shareResult);
 $("#customItems").addEventListener("input", updateItemCount);
 $("#createForm").addEventListener("submit", createTheme);

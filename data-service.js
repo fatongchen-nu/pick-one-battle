@@ -52,10 +52,10 @@
         body: JSON.stringify({
           id, title: theme.title, emoji: theme.emoji, description: theme.description,
           items: theme.items, author_name: theme.author || null,
-          visibility: "public", status: "pending"
+          visibility: "public", status: "approved"
         })
       });
-      return { id, pending: true };
+      return { id, pending: false };
     },
 
     async saveResult(payload) {
