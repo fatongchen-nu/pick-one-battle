@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ff5c35" />
+    <title>极限二选一｜选到最后，才知道最爱</title>
+    <meta name="description" content="从 16 强一路二选一，生成你的唯一冠军和可分享结果。" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主要内容</a>
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="site-header">
+      <button class="brand" id="homeButton" aria-label="返回首页">
+        <span class="brand-mark">2</span>
+        <span>极限二选一</span>
+      </button>
+      <nav class="header-actions" aria-label="主要导航">
+        <button class="text-button" id="communityButton">公开题库</button>
+        <button class="text-button" id="savedButton">我的题库</button>
+        <button class="primary-button small" id="createButton">＋ 创建题目</button>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section id="homeView" class="view home-view">
+        <div class="hero">
+          <div class="hero-copy">
+            <div class="eyebrow"><span></span> NO TIES. ONE WINNER.</div>
+            <h1>喜欢那么多，<br /><em>只能留一个。</em></h1>
+            <p>不用保存表格，也不用一个个打字。从 16 强开始，凭直觉点下去，看看谁会成为你的唯一冠军。</p>
+            <div class="hero-actions">
+              <button class="primary-button large" id="heroStartButton">开始一局 <span>→</span></button>
+              <button class="secondary-button large" id="heroCreateButton">做自己的题</button>
+            </div>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <div class="versus-card card-left"><span>01</span><strong>心头好</strong><small>跟随直觉</small></div>
+            <div class="versus-burst">VS</div>
+            <div class="versus-card card-right"><span>02</span><strong>意难平</strong><small>必须割舍</small></div>
+            <div class="scribble">只能选一个！</div>
+          </div>
+        </div>
+
+        <section class="themes-section" aria-labelledby="themesTitle">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow muted">PICK A BRACKET</p>
+              <h2 id="themesTitle">今天纠结什么？</h2>
+            </div>
+            <p>先从做好的主题开始，也可以创建任何你想比的东西。</p>
+          </div>
+          <div class="theme-grid" id="themeGrid"></div>
+        </section>
+
+        <section class="community-section" id="communitySection" aria-labelledby="communityTitle">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow muted">COMMUNITY PICKS</p>
+              <h2 id="communityTitle">大家正在选</h2>
+            </div>
+            <p>每完成一局，冠军都会获得一票。看看大家最后都留下了谁。</p>
+          </div>
+          <div class="community-board" id="communityBoard"></div>
+        </section>
+
+        <section class="how-it-works">
+          <p class="eyebrow muted">HOW IT WORKS</p>
+          <div class="steps">
+            <article><span>1</span><div><h3>选一个主题</h3><p>歌曲、角色、CP、食物，什么都行。</p></div></article>
+            <article><span>2</span><div><h3>一路二选一</h3><p>不要想太久，第一反应最诚实。</p></div></article>
+            <article><span>3</span><div><h3>晒出你的冠军</h3><p>下载结果卡，或者复制链接给朋友。</p></div></article>
+          </div>
+        </section>
+      </section>
+
+      <section id="gameView" class="view game-view hidden" aria-live="polite">
+        <div class="game-topbar">
+          <button class="back-button" id="exitGameButton">← 退出本局</button>
+          <div class="game-title-wrap"><span id="gameEmoji">🎭</span><strong id="gameTitle">同人女极限二选一</strong></div>
+          <button class="text-button" id="bracketButton">查看对阵树</button>
+        </div>
+
+        <div class="round-tabs" id="roundTabs" aria-label="比赛进度"></div>
+
+        <div class="battle-wrap">
+          <div class="battle-status">
+            <p id="roundLabel">16 强 · 第 1 组</p>
+            <div class="progress-track"><span id="progressBar"></span></div>
+            <small id="progressText">已完成 0 / 15 次选择</small>
+          </div>
+
+          <div class="choice-stage">
+            <button class="choice-card choice-a" id="choiceA">
+              <span class="choice-index">A</span>
+              <strong id="choiceAText"></strong>
+              <span class="choice-hint">选这个 <b>→</b></span>
+            </button>
+            <div class="vs-badge">VS</div>
+            <button class="choice-card choice-b" id="choiceB">
+              <span class="choice-index">B</span>
+              <strong id="choiceBText"></strong>
+              <span class="choice-hint">选这个 <b>→</b></span>
+            </button>
+          </div>
+
+          <div class="game-footer-actions">
+            <button class="text-button" id="undoButton" disabled>↶ 撤回上一次</button>
+            <span>小提示：也可以按键盘 A / B</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="resultView" class="view result-view hidden">
+        <div class="result-hero">
+          <div class="confetti" aria-hidden="true"></div>
+          <p class="eyebrow light">AND THE WINNER IS</p>
+          <div class="trophy">🏆</div>
+          <p class="result-kicker">你的「<span id="resultTheme"></span>」冠军是</p>
+          <h1 id="winnerName"></h1>
+          <p class="result-path" id="resultPath"></p>
+          <div class="result-actions">
+            <button class="white-button" id="downloadButton">↓ 下载完整战报</button>
+            <button class="outline-light-button" id="shareButton">↗ 复制永久链接</button>
+          </div>
+          <button class="play-again" id="playAgainButton">再玩一次</button>
+        </div>
+        <section class="result-bracket-wrap" aria-labelledby="resultBracketTitle">
+          <div class="result-bracket-heading">
+            <div><p class="eyebrow muted">FULL BRACKET</p><h2 id="resultBracketTitle">我的完整晋级路线</h2></div>
+            <div class="result-stamp"><small>本题已完成</small><strong id="resultPlayCount">—</strong><span>局</span></div>
+          </div>
+          <div class="result-bracket-scroll"><div class="poster-bracket" id="resultBracket"></div></div>
+          <div class="result-meta">
+            <span>制表人：<b id="resultAuthor">匿名玩家</b></span>
+            <span>生成时间：<b id="resultDate"></b></span>
+            <span class="permalink-status" id="permalinkStatus">● 永久结果已保存</span>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <dialog id="createDialog" class="modal">
+      <form method="dialog" id="createForm">
+        <div class="modal-head">
+          <div><p class="eyebrow muted">MAKE YOUR OWN</p><h2>创建一个二选一</h2></div>
+          <button class="icon-button" value="cancel" aria-label="关闭">×</button>
+        </div>
+        <label>主题名称<input id="customTitle" maxlength="30" placeholder="例如：我最爱的音乐剧歌曲" required /></label>
+        <label>主题 emoji<input id="customEmoji" maxlength="4" value="✨" /></label>
+        <label>你的署名<input id="customAuthor" maxlength="20" placeholder="例如：小王爷（可选）" /></label>
+        <label>选项（每行一个，支持 4 / 8 / 16 / 32 / 64 个）
+          <textarea id="customItems" rows="12" placeholder="选项 1&#10;选项 2&#10;选项 3&#10;选项 4" required></textarea>
+        </label>
+        <div class="item-counter"><span id="itemCount">0 个选项</span><span id="countHint">至少还需要 4 个</span></div>
+        <label class="publish-toggle"><input id="publishTheme" type="checkbox" /><span><b>发布到公开题库</b><small>其他人可以搜索、游玩并为冠军投票</small></span></label>
+        <p class="form-error" id="formError" role="alert"></p>
+        <button class="primary-button full" type="submit">保存并开始 →</button>
+      </form>
+    </dialog>
+
+    <dialog id="bracketDialog" class="modal bracket-modal">
+      <div class="modal-head sticky">
+        <div><p class="eyebrow muted">YOUR BRACKET</p><h2>对阵树</h2></div>
+        <button class="icon-button" id="closeBracketButton" aria-label="关闭">×</button>
+      </div>
+      <div class="bracket-scroll" id="bracketTree"></div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <canvas id="shareCanvas" width="1080" height="1350" hidden></canvas>
+    <script src="./config.js"></script>
+    <script src="./data-service.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
