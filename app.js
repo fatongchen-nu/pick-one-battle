@@ -491,9 +491,14 @@ $("#downloadButton").addEventListener("click", downloadCard);
 $("#shareButton").addEventListener("click", shareResult);
 $("#customItems").addEventListener("input", updateItemCount);
 $("#createForm").addEventListener("submit", createTheme);
+$("#closeCreateButton").addEventListener("click", () => $("#createDialog").close());
 $("#bracketButton").addEventListener("click", renderBracket);
 $("#closeBracketButton").addEventListener("click", () => $("#bracketDialog").close());
 document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && $("#createDialog").open) {
+    $("#createDialog").close();
+    return;
+  }
   if (!$("#gameView").classList.contains("hidden") && !e.metaKey && !e.ctrlKey) {
     if (e.key.toLowerCase() === "a") choose(0);
     if (e.key.toLowerCase() === "b") choose(1);
