@@ -5,7 +5,7 @@ const PRESETS = [
     title: "同人女极限二选一",
     emoji: "🪶",
     description: "16 个经典设定 · 看看你的终极取向",
-    public: true, plays: 47,
+    author: "xhs@degree", public: true, plays: 47,
     championStats: {"宿敌变情人": 16, "Hurt / Comfort": 11, "青梅竹马": 9, "欢喜冤家": 6, "灵魂互换": 5},
     items: ["ABO", "武侠江湖", "宗门修仙", "黑帮", "花吐症", "Fork & Cake", "Hurt / Comfort", "古风权谋", "都市现代", "灵魂互换", "前世今生", "末世", "无限流", "青梅竹马", "欢喜冤家", "宿敌变情人"]
   },
