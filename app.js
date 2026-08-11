@@ -5,8 +5,8 @@ const PRESETS = [
     title: "同人女极限二选一",
     emoji: "🪶",
     description: "16 个经典设定 · 看看你的终极取向",
-    public: true, plays: 12843,
-    championStats: { "宿敌变情人": 2841, "Hurt / Comfort": 2316, "青梅竹马": 1789 },
+    public: true, plays: 0,
+    championStats: {},
     items: ["ABO", "武侠江湖", "宗门修仙", "黑帮", "花吐症", "Fork & Cake", "Hurt / Comfort", "古风权谋", "都市现代", "灵魂互换", "前世今生", "末世", "无限流", "青梅竹马", "欢喜冤家", "宿敌变情人"]
   },
   {
@@ -15,8 +15,8 @@ const PRESETS = [
     title: "《汉密尔顿》歌曲淘汰赛",
     emoji: "⭐",
     description: "46 首原版卡司专辑曲目 · My Shot 还是 Burn？",
-    public: true, plays: 7632,
-    championStats: { "Wait for It": 1920, "Satisfied": 1741, "Burn": 988 },
+    public: true, plays: 0,
+    championStats: {},
     items: ["Alexander Hamilton", "Aaron Burr, Sir", "My Shot", "The Story of Tonight", "The Schuyler Sisters", "Farmer Refuted", "You'll Be Back", "Right Hand Man", "A Winter's Ball", "Helpless", "Satisfied", "The Story of Tonight (Reprise)", "Wait for It", "Stay Alive", "Ten Duel Commandments", "Meet Me Inside", "That Would Be Enough", "Guns and Ships", "History Has Its Eyes on You", "Yorktown (The World Turned Upside Down)", "What Comes Next?", "Dear Theodosia", "Non-Stop", "What'd I Miss", "Cabinet Battle #1", "Take a Break", "Say No to This", "The Room Where It Happens", "Schuyler Defeated", "Cabinet Battle #2", "Washington on Your Side", "One Last Time", "I Know Him", "The Adams Administration", "We Know", "Hurricane", "The Reynolds Pamphlet", "Burn", "Blow Us All Away", "Stay Alive (Reprise)", "It's Quiet Uptown", "The Election of 1800", "Your Obedient Servant", "Best of Wives and Best of Women", "The World Was Wide Enough", "Who Lives, Who Dies, Who Tells Your Story"]
   },
   {
@@ -25,8 +25,8 @@ const PRESETS = [
     title: "《摩门经》歌曲淘汰赛",
     emoji: "📖",
     description: "16 首原声歌曲 · 选出你的循环单曲",
-    public: true, plays: 4196,
-    championStats: { "Turn It Off": 1132, "I Believe": 987, "Hello!": 621 },
+    public: true, plays: 0,
+    championStats: {},
     items: ["Hello!", "Two by Two", "You and Me (But Mostly Me)", "Hasa Diga Eebowai", "Turn It Off", "I Am Here for You", "All-American Prophet", "Sal Tlay Ka Siti", "Man Up", "Making Things Up Again", "Spooky Mormon Hell Dream", "I Believe", "Baptize Me", "I Am Africa", "Joseph Smith American Moses", "Tomorrow Is a Latter Day"]
   },
   {

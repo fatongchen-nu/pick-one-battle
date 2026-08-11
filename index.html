@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#ff5c35" />
-    <title>极限二选一｜选到最后，才知道最爱</title>
-    <meta name="description" content="从 16 强一路二选一，生成你的唯一冠军和可分享结果。" />
+    <title>极限二选一｜一路二选一，选出唯一冠军</title>
+    <meta name="description" content="从你的名单一路二选一，选出唯一冠军，生成可分享的对阵战报。" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet" />
@@ -31,19 +31,19 @@
       <section id="homeView" class="view home-view">
         <div class="hero">
           <div class="hero-copy">
-            <div class="eyebrow"><span></span> NO TIES. ONE WINNER.</div>
-            <h1>喜欢那么多，<br /><em>只能留一个。</em></h1>
-            <p>不用保存表格，也不用一个个打字。从 16 强开始，凭直觉点下去，看看谁会成为你的唯一冠军。</p>
+            <div class="eyebrow"><span></span> 一路二选一 · 只留一个</div>
+            <h1>全都想要，<br /><em>只能留一个。</em></h1>
+            <p>不用列表格，也不用一个个打字。从你的名单开始，一轮轮二选一，直到剩下唯一一个。</p>
             <div class="hero-actions">
               <button class="primary-button large" id="heroStartButton">开始一局 <span>→</span></button>
               <button class="secondary-button large" id="heroCreateButton">做自己的题</button>
             </div>
           </div>
           <div class="hero-art" aria-hidden="true">
-            <div class="versus-card card-left"><span>01</span><strong>心头好</strong><small>跟随直觉</small></div>
+            <div class="versus-card card-left"><span>A</span><strong>留下</strong><small>选它晋级</small></div>
             <div class="versus-burst">VS</div>
-            <div class="versus-card card-right"><span>02</span><strong>意难平</strong><small>必须割舍</small></div>
-            <div class="scribble">只能选一个！</div>
+            <div class="versus-card card-right"><span>B</span><strong>淘汰</strong><small>这轮出局</small></div>
+            <div class="scribble">只能选一个</div>
           </div>
         </div>
 
@@ -53,7 +53,7 @@
               <p class="eyebrow muted">PICK A BRACKET</p>
               <h2 id="themesTitle">今天纠结什么？</h2>
             </div>
-            <p>先从做好的主题开始，也可以创建任何你想比的东西。</p>
+            <p>从现成题库开始，也可以自己建一个来比。</p>
           </div>
           <div class="theme-grid" id="themeGrid"></div>
         </section>
@@ -64,7 +64,7 @@
               <p class="eyebrow muted">COMMUNITY PICKS</p>
               <h2 id="communityTitle">大家正在选</h2>
             </div>
-            <p>每完成一局，冠军都会获得一票。看看大家最后都留下了谁。</p>
+            <p>每玩完一局，冠军得一票。看看大家最后都留下了谁。</p>
           </div>
           <div class="community-board" id="communityBoard"></div>
         </section>
@@ -73,8 +73,8 @@
           <p class="eyebrow muted">HOW IT WORKS</p>
           <div class="steps">
             <article><span>1</span><div><h3>选一个主题</h3><p>歌曲、角色、CP、食物，什么都行。</p></div></article>
-            <article><span>2</span><div><h3>一路二选一</h3><p>不要想太久，第一反应最诚实。</p></div></article>
-            <article><span>3</span><div><h3>晒出你的冠军</h3><p>下载结果卡，或者复制链接给朋友。</p></div></article>
+            <article><span>2</span><div><h3>一路二选一</h3><p>每次只在两个里选一个。</p></div></article>
+            <article><span>3</span><div><h3>晒出你的冠军</h3><p>下载完整对阵战报，或复制链接发给朋友。</p></div></article>
           </div>
         </section>
 
@@ -95,9 +95,9 @@
 
         <div class="battle-wrap">
           <div class="battle-status">
-            <p id="roundLabel">16 强 · 第 1 组</p>
+            <p id="roundLabel">第 1 组</p>
             <div class="progress-track"><span id="progressBar"></span></div>
-            <small id="progressText">已完成 0 / 15 次选择</small>
+            <small id="progressText">已完成 0 次选择</small>
           </div>
 
           <div class="choice-stage">
