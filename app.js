@@ -549,43 +549,56 @@ async function downloadCard() {
   const N = rounds[0].length;
   const champ = rounds.at(-1)[0];
 
-  // 上下分半：决赛两位对手各领一棵子树，从上下两端向中央的冠军收拢（竖版）
+  // 上下分半：决赛两位对手各领一棵子树，从上下两端向中央的冠军收拢（竖屏）
   const k = Math.min(2 ** (L - 2), N);     // 上半叶子数（初始名单前 k 个）
   const kL = k, kR = N - k, M = Math.max(kL, kR);
 
-  // 尺寸分档：选手越多，框越小、字越小
+  // ---- 深色·懂球帝淘汰赛配色 ----
+  const C = {
+    bg: "#2b2f38", header: "#20232b", accent: "#ff5c35",
+    winFill: "rgba(255,92,53,.15)", winText: "#ffffff", winBorder: "#ff5c35",
+    loseFill: "#353a45", loseText: "rgba(255,255,255,.5)", loseBorder: "rgba(255,255,255,.07)",
+    line: "rgba(255,255,255,.13)", label: "rgba(255,255,255,.4)", sub: "rgba(255,255,255,.62)"
+  };
+
+  const headerH = 232, padTop = 46, sideMargin = 44, labelW = 84, footerH = 178;
+
+  // 尺寸分档：选手越多，框越小、字越小（之后还会为竖屏进一步收窄）
   let bw, bh, hGap, font, rowGap;
-  if (M <= 8)       { bw = 150; bh = 40; hGap = 16; font = 15; rowGap = 64; }
-  else if (M <= 16) { bw = 140; bh = 36; hGap = 14; font = 14; rowGap = 56; }
-  else if (M <= 32) { bw = 120; bh = 32; hGap = 12; font = 13; rowGap = 48; }
-  else              { bw = 96;  bh = 28; hGap = 8;  font = 12; rowGap = 40; }
-  const leafStride = bw + hGap, rowStride = bh + rowGap;
+  if (M <= 8)       { bw = 152; bh = 46; hGap = 18; font = 16; rowGap = 60; }
+  else if (M <= 16) { bw = 122; bh = 40; hGap = 14; font = 14; rowGap = 62; }
+  else if (M <= 32) { bw = 98;  bh = 34; hGap = 10; font = 12; rowGap = 64; }
+  else if (M <= 48) { bw = 80;  bh = 30; hGap = 8;  font = 11; rowGap = 60; }
+  else              { bw = 66;  bh = 26; hGap = 6;  font = 10; rowGap = 54; }
 
-  const headerH = 230, padTop = 54, padBottom = 54, sideMargin = 48;
-  const bodyW = M * leafStride, W = sideMargin * 2 + bodyW, centerX = W / 2;
-  const champW = Math.round(bw * 1.5), champH = Math.round(bh * 1.9);
-  const gapHalf = Math.round(rowGap * 0.55);
+  // 由一组尺寸算出全部几何量
+  const geom = (bw, hGap, rowGap) => {
+    const leafStride = bw + hGap, rowStride = bh + rowGap;
+    const gapHalf = Math.round(rowGap * 0.55);
+    const champW = Math.max(Math.round(bw * 1.62), 168), champH = Math.max(Math.round(bh * 2.0), 60);
+    const bodyW = M * leafStride;
+    const contentLeft = sideMargin + labelW;
+    const W = sideMargin * 2 + labelW + bodyW, centerX = contentLeft + bodyW / 2;
+    const topBody = headerH + padTop;
+    const yTop = (r) => topBody + bh / 2 + r * rowStride;
+    const champY = yTop(L - 2) + (bh / 2 + gapHalf + champH / 2);
+    const yBotFinal = champY + (champH / 2 + gapHalf + bh / 2);
+    const yBot = (r) => yBotFinal + (L - 2 - r) * rowStride;
+    const H = yBot(0) + bh / 2 + footerH;
+    return { leafStride, rowStride, gapHalf, champW, champH, bodyW, contentLeft, W, centerX, yTop, champY, yBot, H };
+  };
 
-  const topBody = headerH + padTop;
-  const yTop = (r) => topBody + bh / 2 + r * rowStride;            // 上半：r 越大越靠中央
-  const champY = yTop(L - 2) + (bh / 2 + gapHalf + champH / 2);
-  const yBotFinal = champY + (champH / 2 + gapHalf + bh / 2);
-  const yBot = (r) => yBotFinal + (L - 2 - r) * rowStride;         // 下半：r 越大越靠中央
-  const footerH = 150;                                             // 底部二维码区
-  const H = yBot(0) + bh / 2 + footerH;
+  // 竖屏保障：只要「宽 > 高 × 0.95」就先缩窄格宽（到下限 46），再持续拉大行距，直到画面变竖
+  let g = geom(bw, hGap, rowGap), guard = 0;
+  while (g.W > g.H * 0.95 && guard++ < 400) {
+    if (bw > 46) { bw -= 3; hGap = Math.max(4, hGap - 1); }
+    rowGap += 4;
+    g = geom(bw, hGap, rowGap);
+  }
+  const { leafStride, rowStride, champW, champH, bodyW, contentLeft, W, centerX, yTop, champY, yBot, H } = g;
   canvas.width = W; canvas.height = H;
 
-  // 背景与顶部橙色标题带
-  ctx.fillStyle = "#f6f0e6"; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = "#ff5c35"; ctx.fillRect(0, 0, W, headerH);
-  ctx.textAlign = "left";
-  ctx.fillStyle = "rgba(255,255,255,.82)"; ctx.font = "700 22px sans-serif";
-  ctx.fillText("极 限 二 选 一 · 对 阵 战 报", sideMargin, 58);
-  ctx.fillStyle = "#fff"; ctx.font = "900 50px sans-serif";
-  ctx.fillText(game.theme.title, sideMargin, 128);
-  ctx.font = "700 25px sans-serif"; ctx.fillText(`🏆 冠军：${champ}`, sideMargin, 184);
-
-  // 文字自适应
+  // 文字自适应工具
   const fitFont = (text, maxW, weight, startSize, minSize) => {
     let fs = startSize;
     for (; fs > minSize; fs--) { ctx.font = `${weight} ${fs}px sans-serif`; if (ctx.measureText(text).width <= maxW) break; }
@@ -597,13 +610,42 @@ async function downloadCard() {
     while (s.length > 1 && ctx.measureText(s + "…").width > maxW) s = s.slice(0, -1);
     return s + "…";
   };
+  const roundRect = (x, y, w, h, r) => {
+    ctx.beginPath(); ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  };
+
+  // ---- 背景与顶部标题带（深色）----
+  ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = C.header; ctx.fillRect(0, 0, W, headerH);
+  ctx.fillStyle = C.accent; ctx.fillRect(sideMargin, 46, 6, 150);
+  const textLeft = sideMargin + 24, headMaxW = W - textLeft - sideMargin;
+  ctx.textAlign = "left";
+  ctx.fillStyle = C.sub; ctx.font = "700 22px sans-serif";
+  ctx.fillText("极限二选一 · 淘汰赛", textLeft, 76);
+  const tfs = fitFont(game.theme.title, headMaxW, "900", 48, 24);
+  ctx.fillStyle = "#fff"; ctx.font = `900 ${tfs}px sans-serif`;
+  ctx.fillText(game.theme.title, textLeft, 138);
+  ctx.fillStyle = C.accent; ctx.font = "800 24px sans-serif";
+  ctx.fillText(truncate("🏆 冠军 · " + champ, headMaxW), textLeft, 192);
+
+  // ---- 左侧轮次标签栏 ----
+  const roundName = (cnt) => cnt <= 1 ? "冠军" : cnt === 2 ? "决赛" : cnt === 4 ? "半决赛" : `${cnt}强`;
+  ctx.textAlign = "center"; ctx.fillStyle = C.label; ctx.font = "700 15px sans-serif";
+  const labelX = sideMargin + labelW / 2;
+  for (let r = 0; r <= L - 2; r++) {
+    const nm = roundName(rounds[r].length);
+    ctx.fillText(nm, labelX, yTop(r) + 5);
+    ctx.fillText(nm, labelX, yBot(r) + 5);
+  }
 
   // 位置表 pos[r][i] = {x, y(中心), side:'T'|'B'|'C'}
   const pos = rounds.map(() => []);
   const sideOf = (r, i) => (i * (2 ** r)) < k ? "T" : "B";
   rounds[0].forEach((name, i) => {
     const isT = i < k;
-    const x = isT ? sideMargin + (i + 0.5) * (bodyW / kL) : sideMargin + ((i - k) + 0.5) * (bodyW / kR);
+    const x = isT ? contentLeft + (i + 0.5) * (bodyW / kL) : contentLeft + ((i - k) + 0.5) * (bodyW / kR);
     pos[0][i] = { x, y: isT ? yTop(0) : yBot(0), side: isT ? "T" : "B" };
   });
   for (let r = 1; r <= L - 2; r++) {
@@ -615,7 +657,7 @@ async function downloadCard() {
   }
   pos[L - 1][0] = { x: centerX, y: champY, side: "C" };
 
-  // ---- 连线（胜者路线高亮橙色，淘汰者淡灰）----
+  // ---- 连线（胜者路线高亮橙色，淘汰者淡白）----
   for (let r = 1; r <= L - 2; r++) {
     rounds[r].forEach((name, i) => {
       const parent = pos[r][i];
@@ -624,17 +666,17 @@ async function downloadCard() {
       const junctionY = isT ? parent.y - rowGap / 2 : parent.y + rowGap / 2;
       if (kids.length === 2) {
         ctx.beginPath(); ctx.moveTo(kids[0].x, junctionY); ctx.lineTo(kids[1].x, junctionY);
-        ctx.strokeStyle = "rgba(23,23,22,.16)"; ctx.lineWidth = 1; ctx.stroke();
+        ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.stroke();
       }
       kids.forEach((c, ci) => {
         const won = rounds[r][i] === rounds[r - 1][2 * i + ci];
         const childInner = isT ? c.y + bh / 2 : c.y - bh / 2;
         ctx.beginPath(); ctx.moveTo(c.x, childInner); ctx.lineTo(c.x, junctionY);
-        ctx.strokeStyle = won ? "#ff5c35" : "rgba(23,23,22,.16)"; ctx.lineWidth = won ? 2.5 : 1; ctx.stroke();
+        ctx.strokeStyle = won ? C.accent : C.line; ctx.lineWidth = won ? 2.5 : 1; ctx.stroke();
       });
       const parentInner = isT ? parent.y - bh / 2 : parent.y + bh / 2;
       ctx.beginPath(); ctx.moveTo(parent.x, junctionY); ctx.lineTo(parent.x, parentInner);
-      ctx.strokeStyle = "#ff5c35"; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.strokeStyle = C.accent; ctx.lineWidth = 2.5; ctx.stroke();
     });
   }
   // 决赛 → 冠军
@@ -642,43 +684,56 @@ async function downloadCard() {
   [[f0, f0.y + bh / 2, champY - champH / 2, winnerIsF0], [f1, f1.y - bh / 2, champY + champH / 2, !winnerIsF0]]
     .forEach(([f, fInner, champEdge, won]) => {
       ctx.beginPath(); ctx.moveTo(f.x, fInner); ctx.lineTo(f.x, champEdge); ctx.lineTo(centerX, champEdge);
-      ctx.strokeStyle = won ? "#ff5c35" : "rgba(23,23,22,.16)"; ctx.lineWidth = won ? 3 : 1.5; ctx.stroke();
+      ctx.strokeStyle = won ? C.accent : C.line; ctx.lineWidth = won ? 3 : 1.5; ctx.stroke();
     });
 
   // ---- 画框 ----
   const drawBox = (x, y, w, h, name, champion, advanced) => {
-    ctx.fillStyle = champion ? "#d9f64f" : advanced ? "#fff0eb" : "#ffffff";
-    ctx.fillRect(x - w / 2, y - h / 2, w, h);
-    ctx.strokeStyle = champion ? "#171716" : advanced ? "#ff5c35" : "#cbc5bb";
-    ctx.lineWidth = champion ? 3 : 1; ctx.strokeRect(x - w / 2, y - h / 2, w, h);
-    ctx.fillStyle = "#171716"; ctx.textAlign = "center";
     if (champion) {
+      ctx.save();
+      ctx.shadowColor = "rgba(255,92,53,.5)"; ctx.shadowBlur = 26;
+      roundRect(x - w / 2, y - h / 2, w, h, 14); ctx.fillStyle = C.accent; ctx.fill();
+      ctx.restore();
+      roundRect(x - w / 2, y - h / 2, w, h, 14);
+      ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,.85)"; ctx.stroke();
       const text = "🏆 " + name;
-      const fs = fitFont(text, w - 24, "900", Math.round(champH * 0.5), 16);
-      ctx.font = `900 ${fs}px sans-serif`;
+      const fs = fitFont(text, w - 26, "900", Math.round(champH * 0.46), 15);
+      ctx.font = `900 ${fs}px sans-serif`; ctx.fillStyle = "#fff"; ctx.textAlign = "center";
       ctx.fillText(text, x, y + fs * 0.34);
-    } else {
-      ctx.font = `${advanced ? 700 : 500} ${font}px sans-serif`;
-      ctx.fillText(truncate(name, w - 14), x, y + font * 0.34);
+      return;
     }
+    ctx.fillStyle = advanced ? C.winFill : C.loseFill;
+    ctx.fillRect(x - w / 2, y - h / 2, w, h);
+    ctx.lineWidth = advanced ? 1.5 : 1;
+    ctx.strokeStyle = advanced ? C.winBorder : C.loseBorder;
+    ctx.strokeRect(x - w / 2, y - h / 2, w, h);
+    if (advanced) { ctx.fillStyle = C.accent; ctx.fillRect(x - w / 2, y - h / 2, 3, h); }
+    ctx.fillStyle = advanced ? C.winText : C.loseText; ctx.textAlign = "center";
+    ctx.font = `${advanced ? 700 : 500} ${font}px sans-serif`;
+    ctx.fillText(truncate(name, w - 16), x, y + font * 0.34);
   };
   for (let r = 0; r <= L - 2; r++) {
     rounds[r].forEach((name, i) => drawBox(pos[r][i].x, pos[r][i].y, bw, bh, name, false, (rounds[r + 1] || []).includes(name)));
   }
   drawBox(centerX, champY, champW, champH, champ, true, false);
-  ctx.fillStyle = "rgba(23,23,22,.5)"; ctx.font = "700 15px sans-serif"; ctx.textAlign = "center";
-  ctx.fillText("冠军", centerX, champY - champH / 2 - 8);
+  ctx.fillStyle = C.sub; ctx.font = "700 15px sans-serif"; ctx.textAlign = "center";
+  ctx.fillText("总冠军", centerX, champY - champH / 2 - 10);
 
-  // ---- 底部二维码 + 网址 ----
+  // ---- 底部二维码 + 网址（深色底，二维码加白垫确保可扫）----
   const qr = await qrImagePromise;
-  const qrS = 96, footTop = yBot(0) + bh / 2 + 34;
-  ctx.textAlign = "left"; ctx.font = "800 22px sans-serif";
+  const qrS = 104, footTop = yBot(0) + bh / 2 + 40;
+  ctx.textAlign = "left"; ctx.font = "800 23px sans-serif";
   const w1 = ctx.measureText("扫码来玩").width;
   ctx.font = "700 19px sans-serif"; const w2 = ctx.measureText("pick-one-battle.vercel.app").width;
-  const groupW = qrS + 18 + Math.max(w1, w2), gx = centerX - groupW / 2, tx = gx + qrS + 18;
-  if (qr) ctx.drawImage(qr, gx, footTop, qrS, qrS);
-  ctx.fillStyle = "#171716"; ctx.font = "800 22px sans-serif"; ctx.fillText("扫码来玩", tx, footTop + 40);
-  ctx.fillStyle = "#ff5c35"; ctx.font = "700 19px sans-serif"; ctx.fillText("pick-one-battle.vercel.app", tx, footTop + 70);
+  const groupW = qrS + 20 + Math.max(w1, w2), gx = centerX - groupW / 2, tx = gx + qrS + 20;
+  if (qr) {
+    ctx.fillStyle = "#fff"; roundRect(gx - 8, footTop - 8, qrS + 16, qrS + 16, 10); ctx.fill();
+    ctx.drawImage(qr, gx, footTop, qrS, qrS);
+  }
+  ctx.fillStyle = "#fff"; ctx.font = "800 23px sans-serif"; ctx.textAlign = "left";
+  ctx.fillText("扫码来玩", tx, footTop + 46);
+  ctx.fillStyle = C.accent; ctx.font = "700 19px sans-serif";
+  ctx.fillText("pick-one-battle.vercel.app", tx, footTop + 78);
 
   saveCanvas(canvas, `极限二选一-${champ}.png`);
 }
