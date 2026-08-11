@@ -5,7 +5,7 @@ const PRESETS = [
     title: "同人女极限二选一",
     emoji: "🪶",
     description: "16 个经典设定 · 看看你的终极取向",
-    author: "degree", public: true, plays: 12843,
+    public: true, plays: 12843,
     championStats: { "宿敌变情人": 2841, "Hurt / Comfort": 2316, "青梅竹马": 1789 },
     items: ["ABO", "武侠江湖", "宗门修仙", "黑帮", "花吐症", "Fork & Cake", "Hurt / Comfort", "古风权谋", "都市现代", "灵魂互换", "前世今生", "末世", "无限流", "青梅竹马", "欢喜冤家", "宿敌变情人"]
   },
@@ -15,7 +15,7 @@ const PRESETS = [
     title: "《汉密尔顿》歌曲淘汰赛",
     emoji: "⭐",
     description: "46 首原版卡司专辑曲目 · My Shot 还是 Burn？",
-    author: "Broadway 茶水间", public: true, plays: 7632,
+    public: true, plays: 7632,
     championStats: { "Wait for It": 1920, "Satisfied": 1741, "Burn": 988 },
     items: ["Alexander Hamilton", "Aaron Burr, Sir", "My Shot", "The Story of Tonight", "The Schuyler Sisters", "Farmer Refuted", "You'll Be Back", "Right Hand Man", "A Winter's Ball", "Helpless", "Satisfied", "The Story of Tonight (Reprise)", "Wait for It", "Stay Alive", "Ten Duel Commandments", "Meet Me Inside", "That Would Be Enough", "Guns and Ships", "History Has Its Eyes on You", "Yorktown (The World Turned Upside Down)", "What Comes Next?", "Dear Theodosia", "Non-Stop", "What'd I Miss", "Cabinet Battle #1", "Take a Break", "Say No to This", "The Room Where It Happens", "Schuyler Defeated", "Cabinet Battle #2", "Washington on Your Side", "One Last Time", "I Know Him", "The Adams Administration", "We Know", "Hurricane", "The Reynolds Pamphlet", "Burn", "Blow Us All Away", "Stay Alive (Reprise)", "It's Quiet Uptown", "The Election of 1800", "Your Obedient Servant", "Best of Wives and Best of Women", "The World Was Wide Enough", "Who Lives, Who Dies, Who Tells Your Story"]
   },
@@ -25,7 +25,7 @@ const PRESETS = [
     title: "《摩门经》歌曲淘汰赛",
     emoji: "📖",
     description: "16 首原声歌曲 · 选出你的循环单曲",
-    author: "音乐剧观察员", public: true, plays: 4196,
+    public: true, plays: 4196,
     championStats: { "Turn It Off": 1132, "I Believe": 987, "Hello!": 621 },
     items: ["Hello!", "Two by Two", "You and Me (But Mostly Me)", "Hasa Diga Eebowai", "Turn It Off", "I Am Here for You", "All-American Prophet", "Sal Tlay Ka Siti", "Man Up", "Making Things Up Again", "Spooky Mormon Hell Dream", "I Believe", "Baptize Me", "I Am Africa", "Joseph Smith American Moses", "Tomorrow Is a Latter Day"]
   },
@@ -35,7 +35,7 @@ const PRESETS = [
     title: "《Dear Evan Hansen》歌曲淘汰赛",
     emoji: "💙",
     description: "14 首原版卡司专辑曲目 · You Will Be Found",
-    author: "Broadway 茶水间", public: true, plays: 0,
+    public: true, plays: 0,
     championStats: {},
     items: ["Anybody Have a Map?", "Waving Through a Window", "For Forever", "Sincerely, Me", "Requiem", "If I Could Tell Her", "Disappear", "You Will Be Found", "To Break in a Glove", "Only Us", "Good for You", "Words Fail", "So Big / So Small", "Finale"]
   },
@@ -45,7 +45,7 @@ const PRESETS = [
     title: "《EPIC》全曲淘汰赛",
     emoji: "🌊",
     description: "40 首官方完整概念专辑曲目 · 九大 Saga 一次选完",
-    author: "音乐剧观察员", public: true, plays: 0,
+    public: true, plays: 0,
     championStats: {},
     items: ["The Horse and the Infant", "Just a Man", "Full Speed Ahead", "Open Arms", "Warrior of the Mind", "Polyphemus", "Survive", "Remember Them", "My Goodbye", "Storm", "Luck Runs Out", "Keep Your Friends Close", "Ruthlessness", "Puppeteer", "Wouldn't You Like", "Done For", "There Are Other Ways", "The Underworld", "No Longer You", "Monster", "Suffering", "Different Beast", "Scylla", "Mutiny", "Thunder Bringer", "Legendary", "Little Wolf", "We'll Be Fine", "Love in Paradise", "God Games", "Not Sorry for Loving You", "Dangerous", "Charybdis", "Get in the Water", "Six Hundred Strike", "The Challenge", "Hold Them Down", "Odysseus", "I Can't Help but Wonder", "Would You Fall in Love with Me Again"]
   },
@@ -55,7 +55,7 @@ const PRESETS = [
     title: "漫威角色人气战",
     emoji: "🦸",
     description: "64 位漫威影视角色 · 英雄反派一起上场",
-    author: "极限二选一编辑部", public: true, plays: 0,
+    public: true, plays: 0,
     championStats: {},
     items: ["钢铁侠 Tony Stark", "美国队长 Steve Rogers", "雷神 Thor", "浩克 Bruce Banner", "黑寡妇 Natasha Romanoff", "鹰眼 Clint Barton", "蜘蛛侠 Peter Parker", "奇异博士 Stephen Strange", "黑豹 T'Challa", "惊奇队长 Carol Danvers", "绯红女巫 Wanda Maximoff", "幻视 Vision", "猎鹰 Sam Wilson", "冬兵 Bucky Barnes", "战争机器 James Rhodes", "蚁人 Scott Lang", "黄蜂女 Hope van Dyne", "星爵 Peter Quill", "卡魔拉 Gamora", "毁灭者 Drax", "火箭浣熊 Rocket", "格鲁特 Groot", "螳螂女 Mantis", "星云 Nebula", "洛基 Loki", "尼克·弗瑞 Nick Fury", "菲尔·科尔森 Phil Coulson", "玛丽亚·希尔 Maria Hill", "尚气 Shang-Chi", "凯蒂 Katy", "叶莲娜 Yelena Belova", "凯特·毕肖普 Kate Bishop", "月光骑士 Marc Spector", "惊奇少女 Kamala Khan", "女浩克 Jennifer Walters", "夜魔侠 Matt Murdock", "惩罚者 Frank Castle", "杰茜卡·琼斯 Jessica Jones", "卢克·凯奇 Luke Cage", "铁拳 Danny Rand", "阿加莎 Agatha Harkness", "死侍 Wade Wilson", "金刚狼 Logan", "莫妮卡·兰博 Monica Rambeau", "美国小姐 America Chavez", "王 Wong", "奥克耶 Okoye", "苏睿 Shuri", "姆巴库 M'Baku", "瓦尔基里 Valkyrie", "科尔格 Korg", "简·福斯特 Jane Foster", "佩吉·卡特 Peggy Carter", "霍华德·斯塔克 Howard Stark", "佩珀·波茨 Pepper Potts", "哈皮·霍根 Happy Hogan", "灭霸 Thanos", "齐尔蒙格 Killmonger", "海拉 Hela", "奥创 Ultron", "绿魔 Green Goblin", "章鱼博士 Doctor Octopus", "神秘客 Mysterio", "文武 Wenwu"]
   },
@@ -65,7 +65,7 @@ const PRESETS = [
     title: "中式小吃二选一",
     emoji: "🥟",
     description: "64 种街头与地方小吃 · 空腹慎入",
-    author: "极限二选一编辑部", public: true, plays: 0,
+    public: true, plays: 0,
     championStats: {},
     items: ["煎饼果子", "肉夹馍", "臭豆腐", "烤冷面", "麻辣烫", "串串香", "螺蛳粉", "热干面", "肠粉", "生煎包", "小笼包", "锅贴", "水煎包", "灌汤包", "叉烧包", "蛋挞", "鸡蛋仔", "章鱼小丸子", "手抓饼", "葱油饼", "韭菜盒子", "糖油粑粑", "糍粑", "驴打滚", "艾窝窝", "豌豆黄", "冰糖葫芦", "糖炒栗子", "烤红薯", "凉皮", "凉粉", "酸辣粉", "米线", "锅盔", "油条", "豆浆", "豆腐脑", "胡辣汤", "牛肉粉", "馄饨", "鸭血粉丝汤", "烧麦", "粽子", "茶叶蛋", "卤味", "烤串", "烤面筋", "铁板豆腐", "狼牙土豆", "炸串", "炸鸡排", "盐酥鸡", "蚵仔煎", "大肠包小肠", "饭团", "凉面", "甜水面", "担担面", "钵钵鸡", "炒年糕", "双皮奶", "姜撞奶", "杨枝甘露", "豆花"]
   },
@@ -152,7 +152,7 @@ function renderThemes() {
       <span class="emoji">${escapeHtml(theme.emoji)}</span>
       <h3>${escapeHtml(theme.title)}</h3>
       <p>${theme.items.length} 强 · ${escapeHtml(theme.description.split("·").pop().trim())}</p>
-      <span class="theme-stats"><span>▶ ${formatNumber(stats.plays)} 局</span><span>by ${escapeHtml(theme.author || "我")}</span></span>
+      <span class="theme-stats"><span>▶ ${formatNumber(stats.plays)} 局</span>${theme.author ? `<span>by ${escapeHtml(theme.author)}</span>` : ""}</span>
       <span class="arrow">↗</span>
     </button>`;
   }).join("") + `
@@ -179,7 +179,7 @@ function renderCommunity() {
     const share = row.stats.plays ? Math.round(row.champion[1] / row.stats.plays * 100) : 0;
     return `<article class="community-rank"><span class="rank-number">0${index+1}</span><div>
       <h3>${escapeHtml(row.theme.emoji)} ${escapeHtml(row.theme.title)}</h3>
-      <p>${formatNumber(row.stats.plays)} 人完成 · by ${escapeHtml(row.theme.author || "匿名")}</p>
+      <p>${formatNumber(row.stats.plays)} 人完成${row.theme.author ? ` · by ${escapeHtml(row.theme.author)}` : ""}</p>
       <div class="champion-line"><small>当前人气冠军</small><strong>${escapeHtml(row.champion[0])}</strong>
       <div class="vote-bar"><span style="width:${Math.min(100, share)}%"></span></div></div>
     </div></article>`;
@@ -506,35 +506,134 @@ async function loadSharedResult() {
 function downloadCard() {
   const canvas = $("#shareCanvas");
   const ctx = canvas.getContext("2d");
-  const columnWidth = 210;
-  canvas.width = Math.max(1200, game.rounds.length * columnWidth + 100);
-  canvas.height = Math.max(1350, game.initialItems.length * 42 + 360);
-  ctx.fillStyle = "#f6f0e6"; ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle = "#ff5c35"; ctx.fillRect(0,0,canvas.width,250);
-  ctx.textAlign = "left"; ctx.fillStyle = "rgba(255,255,255,.8)"; ctx.font = "700 22px sans-serif"; ctx.fillText("极 限 二 选 一 · 完 整 战 报",50,60);
-  ctx.fillStyle = "white"; ctx.font = "900 54px sans-serif"; ctx.fillText(game.theme.title,50,135);
-  ctx.font = "700 26px sans-serif"; ctx.fillText(`🏆 冠军：${game.rounds.at(-1)[0]}`,50,196);
-  ctx.textAlign = "center";
-  const top = 310, availableHeight = canvas.height - top - 80;
-  game.rounds.forEach((round, roundIndex) => {
-    const x = 50 + roundIndex * columnWidth;
-    const width = columnWidth - 18;
-    const next = game.rounds[roundIndex + 1] || [];
-    ctx.fillStyle = "#171716"; ctx.font = "800 18px sans-serif"; ctx.fillText(round.length === 1 ? "🏆 冠军" : roundName(round.length),x + width/2,top - 22);
-    const step = availableHeight / round.length;
-    round.forEach((name,index) => {
-      const y = top + step * index + step/2 - 18;
-      const advanced = next.includes(name), champion = round.length === 1;
-      ctx.fillStyle = champion ? "#d9f64f" : advanced ? "#fff0eb" : "#ffffff";
-      ctx.fillRect(x,y,width,36); ctx.strokeStyle = champion ? "#171716" : advanced ? "#ff5c35" : "#bdb7ae"; ctx.lineWidth = champion ? 3 : 1; ctx.strokeRect(x,y,width,36);
-      ctx.fillStyle = "#171716"; ctx.font = `${advanced || champion ? 700 : 500} 14px sans-serif`;
-      const label = name.length > 20 ? `${name.slice(0,19)}…` : name; ctx.fillText(label,x+width/2,y+23);
-    });
+  const rounds = game.rounds;              // [初始名单 … 冠军]
+  const L = rounds.length;
+  const N = rounds[0].length;
+  const champ = rounds.at(-1)[0];
+
+  // 上下分半：决赛两位对手各领一棵子树，从上下两端向中央的冠军收拢（竖版）
+  const k = Math.min(2 ** (L - 2), N);     // 上半叶子数（初始名单前 k 个）
+  const kL = k, kR = N - k, M = Math.max(kL, kR);
+
+  // 尺寸分档：选手越多，框越小、字越小
+  let bw, bh, hGap, font, rowGap;
+  if (M <= 8)       { bw = 150; bh = 40; hGap = 16; font = 15; rowGap = 64; }
+  else if (M <= 16) { bw = 140; bh = 36; hGap = 14; font = 14; rowGap = 56; }
+  else if (M <= 32) { bw = 120; bh = 32; hGap = 12; font = 13; rowGap = 48; }
+  else              { bw = 96;  bh = 28; hGap = 8;  font = 12; rowGap = 40; }
+  const leafStride = bw + hGap, rowStride = bh + rowGap;
+
+  const headerH = 230, padTop = 54, padBottom = 54, sideMargin = 48;
+  const bodyW = M * leafStride, W = sideMargin * 2 + bodyW, centerX = W / 2;
+  const champW = Math.round(bw * 1.5), champH = Math.round(bh * 1.9);
+  const gapHalf = Math.round(rowGap * 0.55);
+
+  const topBody = headerH + padTop;
+  const yTop = (r) => topBody + bh / 2 + r * rowStride;            // 上半：r 越大越靠中央
+  const champY = yTop(L - 2) + (bh / 2 + gapHalf + champH / 2);
+  const yBotFinal = champY + (champH / 2 + gapHalf + bh / 2);
+  const yBot = (r) => yBotFinal + (L - 2 - r) * rowStride;         // 下半：r 越大越靠中央
+  const H = yBot(0) + bh / 2 + padBottom;
+  canvas.width = W; canvas.height = H;
+
+  // 背景与顶部橙色标题带
+  ctx.fillStyle = "#f6f0e6"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#ff5c35"; ctx.fillRect(0, 0, W, headerH);
+  ctx.textAlign = "left";
+  ctx.fillStyle = "rgba(255,255,255,.82)"; ctx.font = "700 22px sans-serif";
+  ctx.fillText("极 限 二 选 一 · 对 阵 战 报", sideMargin, 58);
+  ctx.fillStyle = "#fff"; ctx.font = "900 50px sans-serif";
+  ctx.fillText(game.theme.title, sideMargin, 128);
+  ctx.font = "700 25px sans-serif"; ctx.fillText(`🏆 冠军：${champ}`, sideMargin, 184);
+
+  // 文字自适应
+  const fitFont = (text, maxW, weight, startSize, minSize) => {
+    let fs = startSize;
+    for (; fs > minSize; fs--) { ctx.font = `${weight} ${fs}px sans-serif`; if (ctx.measureText(text).width <= maxW) break; }
+    return fs;
+  };
+  const truncate = (name, maxW) => {
+    if (ctx.measureText(name).width <= maxW) return name;
+    let s = name;
+    while (s.length > 1 && ctx.measureText(s + "…").width > maxW) s = s.slice(0, -1);
+    return s + "…";
+  };
+
+  // 位置表 pos[r][i] = {x, y(中心), side:'T'|'B'|'C'}
+  const pos = rounds.map(() => []);
+  const sideOf = (r, i) => (i * (2 ** r)) < k ? "T" : "B";
+  rounds[0].forEach((name, i) => {
+    const isT = i < k;
+    const x = isT ? sideMargin + (i + 0.5) * (bodyW / kL) : sideMargin + ((i - k) + 0.5) * (bodyW / kR);
+    pos[0][i] = { x, y: isT ? yTop(0) : yBot(0), side: isT ? "T" : "B" };
   });
+  for (let r = 1; r <= L - 2; r++) {
+    rounds[r].forEach((name, i) => {
+      const kids = [pos[r - 1][2 * i], pos[r - 1][2 * i + 1]].filter(Boolean);
+      const s = sideOf(r, i);
+      pos[r][i] = { x: kids.map(c => c.x).reduce((a, b) => a + b, 0) / kids.length, y: s === "T" ? yTop(r) : yBot(r), side: s };
+    });
+  }
+  pos[L - 1][0] = { x: centerX, y: champY, side: "C" };
+
+  // ---- 连线（胜者路线高亮橙色，淘汰者淡灰）----
+  for (let r = 1; r <= L - 2; r++) {
+    rounds[r].forEach((name, i) => {
+      const parent = pos[r][i];
+      const kids = [pos[r - 1][2 * i], pos[r - 1][2 * i + 1]].filter(Boolean);
+      const isT = parent.side === "T";
+      const junctionY = isT ? parent.y - rowGap / 2 : parent.y + rowGap / 2;
+      if (kids.length === 2) {
+        ctx.beginPath(); ctx.moveTo(kids[0].x, junctionY); ctx.lineTo(kids[1].x, junctionY);
+        ctx.strokeStyle = "rgba(23,23,22,.16)"; ctx.lineWidth = 1; ctx.stroke();
+      }
+      kids.forEach((c, ci) => {
+        const won = rounds[r][i] === rounds[r - 1][2 * i + ci];
+        const childInner = isT ? c.y + bh / 2 : c.y - bh / 2;
+        ctx.beginPath(); ctx.moveTo(c.x, childInner); ctx.lineTo(c.x, junctionY);
+        ctx.strokeStyle = won ? "#ff5c35" : "rgba(23,23,22,.16)"; ctx.lineWidth = won ? 2.5 : 1; ctx.stroke();
+      });
+      const parentInner = isT ? parent.y - bh / 2 : parent.y + bh / 2;
+      ctx.beginPath(); ctx.moveTo(parent.x, junctionY); ctx.lineTo(parent.x, parentInner);
+      ctx.strokeStyle = "#ff5c35"; ctx.lineWidth = 2.5; ctx.stroke();
+    });
+  }
+  // 决赛 → 冠军
+  const f0 = pos[L - 2][0], f1 = pos[L - 2][1], winnerIsF0 = rounds[L - 2][0] === champ;
+  [[f0, f0.y + bh / 2, champY - champH / 2, winnerIsF0], [f1, f1.y - bh / 2, champY + champH / 2, !winnerIsF0]]
+    .forEach(([f, fInner, champEdge, won]) => {
+      ctx.beginPath(); ctx.moveTo(f.x, fInner); ctx.lineTo(f.x, champEdge); ctx.lineTo(centerX, champEdge);
+      ctx.strokeStyle = won ? "#ff5c35" : "rgba(23,23,22,.16)"; ctx.lineWidth = won ? 3 : 1.5; ctx.stroke();
+    });
+
+  // ---- 画框 ----
+  const drawBox = (x, y, w, h, name, champion, advanced) => {
+    ctx.fillStyle = champion ? "#d9f64f" : advanced ? "#fff0eb" : "#ffffff";
+    ctx.fillRect(x - w / 2, y - h / 2, w, h);
+    ctx.strokeStyle = champion ? "#171716" : advanced ? "#ff5c35" : "#cbc5bb";
+    ctx.lineWidth = champion ? 3 : 1; ctx.strokeRect(x - w / 2, y - h / 2, w, h);
+    ctx.fillStyle = "#171716"; ctx.textAlign = "center";
+    if (champion) {
+      const text = "🏆 " + name;
+      const fs = fitFont(text, w - 24, "900", Math.round(champH * 0.5), 16);
+      ctx.font = `900 ${fs}px sans-serif`;
+      ctx.fillText(text, x, y + fs * 0.34);
+    } else {
+      ctx.font = `${advanced ? 700 : 500} ${font}px sans-serif`;
+      ctx.fillText(truncate(name, w - 14), x, y + font * 0.34);
+    }
+  };
+  for (let r = 0; r <= L - 2; r++) {
+    rounds[r].forEach((name, i) => drawBox(pos[r][i].x, pos[r][i].y, bw, bh, name, false, (rounds[r + 1] || []).includes(name)));
+  }
+  drawBox(centerX, champY, champW, champH, champ, true, false);
+  ctx.fillStyle = "rgba(23,23,22,.5)"; ctx.font = "700 15px sans-serif"; ctx.textAlign = "center";
+  ctx.fillText("冠军", centerX, champY - champH / 2 - 8);
+
   const link = document.createElement("a");
-  link.download = `极限二选一-${game.rounds.at(-1)[0]}.png`;
+  link.download = `极限二选一-${champ}.png`;
   link.href = canvas.toDataURL("image/png"); link.click();
-  showToast("结果卡已下载");
+  showToast("对阵战报已下载");
 }
 
 function showToast(message) {
@@ -583,7 +682,6 @@ async function init() {
       if (existing) {
         existing.plays = remote.plays;
         existing.championStats = remote.championStats;
-        existing.author = remote.author;
         existing.public = true;
         existing.pending = false;
       } else {
