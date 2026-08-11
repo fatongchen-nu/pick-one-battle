@@ -503,7 +503,45 @@ async function loadSharedResult() {
   } catch { location.hash = ""; return false; }
 }
 
-function downloadCard() {
+const REPORT_QR = "data:image/png;base64,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";
+
+// 加载图片（data URL），失败返回 null，不阻塞下载
+function loadImage(src) {
+  return new Promise(resolve => { const im = new Image(); im.onload = () => resolve(im); im.onerror = () => resolve(null); im.src = src; });
+}
+// 预加载二维码，避免下载时再等待（保留点击手势，手机分享才不会被拦）
+const qrImagePromise = loadImage(REPORT_QR);
+
+function dataURLtoBlob(dataURL) {
+  const [head, b64] = dataURL.split(",");
+  const mime = (head.match(/:(.*?);/) || [, "image/png"])[1];
+  const bin = atob(b64), u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return new Blob([u8], { type: mime });
+}
+
+// 保存战报：手机优先系统分享（可保存到相册/文件），否则触发下载。
+// 全程同步（toDataURL），确保在点击手势内调用 share，手机端才不会被浏览器拦截。
+function saveCanvas(canvas, filename) {
+  const blob = dataURLtoBlob(canvas.toDataURL("image/png"));
+  const file = new File([blob], filename, { type: "image/png" });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file], title: "极限二选一 · 对阵战报" })
+      .then(() => showToast("已生成，可保存到相册"))
+      .catch(err => { if (!err || err.name !== "AbortError") downloadBlob(blob, filename); });
+    return;
+  }
+  downloadBlob(blob, filename);
+}
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.download = filename; a.href = url;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  showToast("对阵战报已保存");
+}
+
+async function downloadCard() {
   const canvas = $("#shareCanvas");
   const ctx = canvas.getContext("2d");
   const rounds = game.rounds;              // [初始名单 … 冠军]
@@ -533,7 +571,8 @@ function downloadCard() {
   const champY = yTop(L - 2) + (bh / 2 + gapHalf + champH / 2);
   const yBotFinal = champY + (champH / 2 + gapHalf + bh / 2);
   const yBot = (r) => yBotFinal + (L - 2 - r) * rowStride;         // 下半：r 越大越靠中央
-  const H = yBot(0) + bh / 2 + padBottom;
+  const footerH = 150;                                             // 底部二维码区
+  const H = yBot(0) + bh / 2 + footerH;
   canvas.width = W; canvas.height = H;
 
   // 背景与顶部橙色标题带
@@ -630,10 +669,18 @@ function downloadCard() {
   ctx.fillStyle = "rgba(23,23,22,.5)"; ctx.font = "700 15px sans-serif"; ctx.textAlign = "center";
   ctx.fillText("冠军", centerX, champY - champH / 2 - 8);
 
-  const link = document.createElement("a");
-  link.download = `极限二选一-${champ}.png`;
-  link.href = canvas.toDataURL("image/png"); link.click();
-  showToast("对阵战报已下载");
+  // ---- 底部二维码 + 网址 ----
+  const qr = await qrImagePromise;
+  const qrS = 96, footTop = yBot(0) + bh / 2 + 34;
+  ctx.textAlign = "left"; ctx.font = "800 22px sans-serif";
+  const w1 = ctx.measureText("扫码来玩").width;
+  ctx.font = "700 19px sans-serif"; const w2 = ctx.measureText("pick-one-battle.vercel.app").width;
+  const groupW = qrS + 18 + Math.max(w1, w2), gx = centerX - groupW / 2, tx = gx + qrS + 18;
+  if (qr) ctx.drawImage(qr, gx, footTop, qrS, qrS);
+  ctx.fillStyle = "#171716"; ctx.font = "800 22px sans-serif"; ctx.fillText("扫码来玩", tx, footTop + 40);
+  ctx.fillStyle = "#ff5c35"; ctx.font = "700 19px sans-serif"; ctx.fillText("pick-one-battle.vercel.app", tx, footTop + 70);
+
+  saveCanvas(canvas, `极限二选一-${champ}.png`);
 }
 
 function showToast(message) {

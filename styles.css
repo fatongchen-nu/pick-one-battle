@@ -57,7 +57,7 @@ button { color: inherit; }
 .versus-card small { font-size: 13px; font-weight: 700; }
 .card-left { left: 15px; top: 10px; background: var(--blue); color: white; transform: rotate(-5deg); }
 .card-right { right: 8px; bottom: 7px; background: var(--acid); transform: rotate(5deg); }
-.versus-burst { position: absolute; z-index: 2; left: 50%; top: 48%; transform: translate(-50%,-50%) rotate(-8deg); width: 92px; height: 92px; display: grid; place-items: center; color: white; font-size: 30px; font-weight: 900; background: var(--orange); border: 2px solid var(--ink); clip-path: polygon(50% 0,62% 25%,85% 15%,76% 39%,100% 50%,75% 62%,86% 85%,61% 76%,50% 100%,38% 76%,14% 86%,25% 62%,0 50%,25% 39%,15% 15%,39% 25%); }
+.versus-burst { position: absolute; z-index: 2; left: 51%; top: 46%; transform: translate(-50%,-50%) rotate(-8deg); width: 92px; height: 92px; display: grid; place-items: center; color: white; font-size: 30px; font-weight: 900; background: var(--orange); border: 2px solid var(--ink); clip-path: polygon(50% 0,62% 25%,85% 15%,76% 39%,100% 50%,75% 62%,86% 85%,61% 76%,50% 100%,38% 76%,14% 86%,25% 62%,0 50%,25% 39%,15% 15%,39% 25%); }
 .scribble { position: absolute; right: 4px; top: -28px; font-weight: 800; transform: rotate(7deg); font-size: 15px; }
 
 .themes-section { border-top: 1.5px solid var(--ink); border-bottom: 1.5px solid var(--ink); background: var(--cream); padding: 70px max(24px, calc((100vw - 1200px) / 2)) 84px; }
