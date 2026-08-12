@@ -106,6 +106,7 @@ const views = [$("#homeView"), $("#gameView"), $("#resultView")];
 let themes = [...PRESETS, ...loadCustomThemes()];
 let game = null;
 let toastTimer;
+let themeQuery = "";
 
 function loadCustomThemes() {
   try { return JSON.parse(localStorage.getItem("pickone-themes") || "[]"); }
@@ -142,9 +143,17 @@ function showView(view) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+function themeMatchesQuery(theme) {
+  if (!themeQuery) return true;
+  const haystack = [theme.title, theme.description, theme.author, ...(theme.items || [])]
+    .filter(Boolean).join(" ").toLowerCase();
+  return haystack.includes(themeQuery);
+}
+
 function renderThemes() {
   const grid = $("#themeGrid");
-  grid.innerHTML = themes.map(theme => {
+  const list = themes.filter(themeMatchesQuery);
+  const cards = list.map(theme => {
     const stats = themeNumbers(theme);
     return `
     <button class="theme-card" data-theme="${escapeHtml(theme.id)}" aria-label="开始 ${escapeHtml(theme.title)}">
@@ -155,14 +164,24 @@ function renderThemes() {
       <span class="theme-stats"><span>▶ ${formatNumber(stats.plays)} 局</span>${theme.author ? `<span>by ${escapeHtml(theme.author)}</span>` : ""}</span>
       <span class="arrow">↗</span>
     </button>`;
-  }).join("") + `
+  }).join("");
+  const createCard = `
     <button class="theme-card create-card" data-create="true">
       <span class="emoji">＋</span>
       <h3>你的脑洞<br />不限主题</h3>
       <p>4—128 个选项 · 自动生成</p>
       <span class="arrow">↗</span>
     </button>`;
+  const empty = themeQuery && !list.length
+    ? `<p class="empty-themes">没有找到和「${escapeHtml(themeQuery)}」相关的题库，换个词试试，或自己建一个 →</p>`
+    : "";
+  grid.innerHTML = empty + cards + createCard;
   renderCommunity();
+}
+
+function applyThemeSearch() {
+  themeQuery = ($("#themeSearch").value || "").trim().toLowerCase();
+  renderThemes();
 }
 
 function formatNumber(number) {
@@ -675,6 +694,9 @@ $("#themeGrid").addEventListener("click", e => {
   if (card.dataset.create) openCreate();
   else startGame(themes.find(t => t.id === card.dataset.theme));
 });
+$("#themeSearchButton").addEventListener("click", applyThemeSearch);
+$("#themeSearch").addEventListener("input", applyThemeSearch);
+$("#themeSearch").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); applyThemeSearch(); } });
 [$("#createButton"), $("#heroCreateButton")].forEach(button => button.addEventListener("click", openCreate));
 $("#heroStartButton").addEventListener("click", () => startGame(themes[0]));
 $("#homeButton").addEventListener("click", () => { location.hash = ""; showView($("#homeView")); });

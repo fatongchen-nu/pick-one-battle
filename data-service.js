@@ -34,7 +34,7 @@
 
     async listPublicThemes() {
       if (!online) return [];
-      const rows = await request("brackets?visibility=eq.public&status=eq.approved&select=id,title,emoji,description,items,author_name,play_count,champion_counts&order=play_count.desc&limit=30");
+      const rows = await request("brackets?visibility=eq.public&status=eq.approved&select=id,title,emoji,description,items,author_name,play_count,champion_counts&order=play_count.desc&limit=100");
       return rows.map(row => ({
         id: `remote-${row.id}`, remoteId: row.id, title: row.title, emoji: row.emoji,
         description: row.description || "社区公开题库", items: row.items,
