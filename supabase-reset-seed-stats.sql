@@ -14,3 +14,4 @@ update public.brackets set play_count = 41, champion_counts = '{"螺蛳粉":10,"
 update public.brackets set play_count = 21, champion_counts = '{"白切黑":7,"病弱":5,"傲娇":4,"美人":3,"冰山":2}'::jsonb, updated_at = now() where id = '44444444-4444-4444-8444-444444444444';
 update public.brackets set play_count = 19, champion_counts = '{"黑切白":6,"糙汉":5,"直球":4,"身强体壮":2,"暴君":2}'::jsonb, updated_at = now() where id = '55555555-5555-4555-8555-555555555555';
 update public.brackets set play_count = 26, champion_counts = '{"少爷和我":7,"史密斯再就业":6,"年会必须停":5,"回音山谷":4,"最后的铸剑师":4}'::jsonb, updated_at = now() where id = '66666666-6666-4666-8666-666666666666';
+update public.brackets set play_count = 15, champion_counts = '{"失去自主":5,"皮肤饥渴":3,"泪失禁":3,"被害妄想":2,"幻听":2}'::jsonb, updated_at = now() where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';

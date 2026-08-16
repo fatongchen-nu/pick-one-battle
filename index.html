@@ -55,9 +55,18 @@
             </div>
             <p>从现成题库开始，也可以自己建一个来比。</p>
           </div>
-          <div class="theme-search" role="search">
-            <input type="search" id="themeSearch" placeholder="搜索题库名称 / 作者 / 选项…" autocomplete="off" aria-label="搜索题库" />
-            <button class="primary-button small" id="themeSearchButton" type="button">搜索</button>
+          <div class="theme-toolbar">
+            <div class="theme-search" role="search">
+              <input type="search" id="themeSearch" placeholder="搜索题库名称 / 作者 / 选项…" autocomplete="off" aria-label="搜索题库" />
+              <button class="primary-button small" id="themeSearchButton" type="button">搜索</button>
+            </div>
+            <label class="theme-sort">
+              <span>排序</span>
+              <select id="themeSort" aria-label="题库排序方式">
+                <option value="plays">完成人数</option>
+                <option value="new">创建时间</option>
+              </select>
+            </label>
           </div>
           <div class="theme-grid" id="themeGrid"></div>
         </section>
@@ -143,6 +152,13 @@
           </div>
           <button class="play-again" id="playAgainButton">再玩一次</button>
         </div>
+        <section class="champion-share-wrap hidden" id="championShareWrap" aria-labelledby="championShareTitle">
+          <div class="champion-share-heading">
+            <div><p class="eyebrow muted">CROWD FAVORITES</p><h2 id="championShareTitle">这个题库，大家都选了谁</h2></div>
+            <p id="championShareTotal"></p>
+          </div>
+          <ol class="champion-share-list" id="championShareList"></ol>
+        </section>
         <section class="result-bracket-wrap" aria-labelledby="resultBracketTitle">
           <div class="result-bracket-heading">
             <div><p class="eyebrow muted">FULL BRACKET</p><h2 id="resultBracketTitle">我的完整晋级路线</h2></div>

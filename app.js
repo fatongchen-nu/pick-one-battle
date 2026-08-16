@@ -98,6 +98,16 @@ const PRESETS = [
     author: "xhs@没有wifi也没有流量", public: true, plays: 26,
     championStats: {"少爷和我": 7, "史密斯再就业": 6, "年会必须停": 5, "回音山谷": 4, "最后的铸剑师": 4},
     items: ["回音山谷", "十上有难事？！", "年会必须停", "史密斯再就业", "等一下", "小镇青年", "拜拜啦地球", "拳村的希望", "下江南", "奈何桥北", "亲情保卫战", "绝命双子星", "当考试还剩15分钟", "大考结束那一天", "有倩有谋", "安可", "抢婚吧哥们儿", "堡大招风", "千年就一回", "密室大作战", "警察和我", "66号公路", "音乐课最重要", "前任特工", "我的唯一", "严言交通", "饭局往事", "花园网吧", "全民运动会", "排练疯云", "老同学显摆大会", "风云再起", "两兄弟牛排店", "渡口", "足球小哥", "妈呀！新老师", "破风", "兴帮往事", "天台告白", "恋恋火锅店", "我要当rapper", "爱赢才会拼", "进化论", "坏小子", "少爷和我", "拜访城堡", "我的伴娘", "军事恋盟", "今天你要嫁给他", "旧警察故事", "小学生作文有画面了", "雷欧雷农场", "大侠别动手", "再见爱人", "抽屉里的猫", "一起去露营", "生日备忘录", "旧矿工故事", "一方青苔", "最后的铸剑师", "顶顶好餐厅", "德古拉和我", "忘不了", "少爷和小姐", "秘密", "救舅大状师", "爱在飞机降落前", "乐园停业那一天", "开学第一天", "史上第一大劫案", "新默剧", "技能五子棋", "真假美猴王", "尤莉娅别哭", "妈妈蜜呀", "最后一站", "那天我在楼顶", "小品的世界", "吐槽吧，吕小严", "飞驰余生", "棒棒小卖部", "虎父无犬子", "龙袍替身", "一颗螺丝钉", "天放的方舟", "与神同行", "拆弹专家", "逃离疯人院", "白日梦想家庭", "没有学习的人不伤心", "盲盒总动员", "空城计", "公主小哥", "西楚霸王", "默契怪盗", "冷不丁梆梆就两拳", "超越机器人", "八十一难", "主角光环", "复活军团", "世纪2000大舞厅", "课间十分钟", "贝多芬", "醉人奇妙夜", "哥的全宇宙", "心动的信号", "合影这件小事", "再见老张", "羊来咯", "孤注一掷", "再见噶尔波", "今天不易出门", "当一个女人决定退鞋", "越狱的夏天", "超快乐男孩", "遇人不赎", "财神来敲我家门", "万松书院", "断片山", "三顾茅庐", "头号玩家", "领养日", "外星人的婚礼", "今天不易破案", "熟人奇妙夜", "四个大人", "笑话一则", "Hello！厂状元！"]
+  },
+  {
+    id: "fandom-symptoms",
+    remoteId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    title: "同人病状/异常状态XP二选一",
+    emoji: "🩹",
+    description: "48 种病状与异常状态 · 选出你的终极 XP",
+    author: "ZN", public: true, plays: 15,
+    championStats: {"失去自主": 5, "皮肤饥渴": 3, "泪失禁": 3, "被害妄想": 2, "幻听": 2},
+    items: ["头痛", "痉挛", "言语障碍", "呼吸困难", "嗜睡", "失眠", "虚脱", "窒息", "记忆混乱", "泪失禁", "呕吐", "吐血", "痛觉放大", "无痛症", "丧失听觉", "丧失视觉", "被害妄想", "失去自主", "晕厥", "幻听", "失温", "创伤应激", "自毁", "毁他", "流鼻血", "饥饿", "情感麻木", "焦虑症", "抑郁症", "替身妄想", "异食癖", "感知停滞", "施虐欲", "皮肤饥渴", "精神分裂", "药物依赖", "夜盲症", "感官过载", "情绪失控", "性亢奋", "狂躁症", "畏光", "恐慌症", "异常兴奋", "厌食症", "耳鸣", "幸福的幻觉", "痛苦的幻觉"]
   }
 ];
 
@@ -107,6 +117,12 @@ let themes = [...PRESETS, ...loadCustomThemes()];
 let game = null;
 let toastTimer;
 let themeQuery = "";
+let themeSort = loadThemeSort();
+
+function loadThemeSort() {
+  try { return localStorage.getItem("pickone-sort") === "new" ? "new" : "plays"; }
+  catch { return "plays"; }
+}
 
 function loadCustomThemes() {
   try { return JSON.parse(localStorage.getItem("pickone-themes") || "[]"); }
@@ -150,11 +166,28 @@ function themeMatchesQuery(theme) {
   return haystack.includes(themeQuery);
 }
 
+// 卡片底部滚动 banner：从题库随机抽最多 12 个选项，让人一眼看出这题库在选什么。
+// 抽样按题库 id 缓存，重渲染（排序/搜索）时不重新乱抽；首尾两份拼接实现无缝循环。
+const tickerCache = new Map();
+function themeTicker(theme) {
+  const items = theme.items || [];
+  if (!items.length) return "";
+  let sample = tickerCache.get(theme.id);
+  if (!sample) {
+    sample = shuffle(items).slice(0, Math.min(items.length, 12));
+    tickerCache.set(theme.id, sample);
+  }
+  const chips = sample.map(name => `<span class="tick">${escapeHtml(name)}</span>`).join("");
+  const dur = Math.max(14, sample.length * 2.6).toFixed(1);
+  return `<span class="card-ticker" aria-hidden="true"><span class="ticker-track" style="animation-duration:${dur}s">${chips}${chips}</span></span>`;
+}
+
 function renderThemes() {
   const grid = $("#themeGrid");
-  const list = themes.filter(themeMatchesQuery);
-  const cards = list.map(theme => {
-    const stats = themeNumbers(theme);
+  // 先算好每个题库的统计，再按所选方式排序（sort 稳定，同分保持原创建顺序）
+  const list = themes.filter(themeMatchesQuery).map(theme => ({ theme, stats: themeNumbers(theme) }));
+  if (themeSort === "plays") list.sort((a, b) => b.stats.plays - a.stats.plays);
+  const cards = list.map(({ theme, stats }) => {
     return `
     <button class="theme-card" data-theme="${escapeHtml(theme.id)}" aria-label="开始 ${escapeHtml(theme.title)}">
       ${theme.public ? `<span class="public-pill">${theme.pending ? "待审核" : "公开"}</span>` : ''}
@@ -163,6 +196,7 @@ function renderThemes() {
       <p>${theme.items.length} 强 · ${escapeHtml(theme.description.split("·").pop().trim())}</p>
       <span class="theme-stats"><span>▶ ${formatNumber(stats.plays)} 局</span>${theme.author ? `<span>by ${escapeHtml(theme.author)}</span>` : ""}</span>
       <span class="arrow">↗</span>
+      ${themeTicker(theme)}
     </button>`;
   }).join("");
   const createCard = `
@@ -359,6 +393,7 @@ function showResult(options = {}) {
   }
   const numbers = themeNumbers(game.theme);
   $("#resultPlayCount").textContent = formatNumber(numbers.plays);
+  renderChampionShare(numbers, winner);
   $("#permalinkStatus").textContent = options.fromShare
     ? "● 分享快照 · 可跨设备打开"
     : window.PickOneDB.online ? "● 永久结果已保存" : "● 本机保存 · 分享链接可跨设备打开";
@@ -379,6 +414,46 @@ function renderResultBracket() {
       }).join("")}
     </div></div>`;
   }).join("");
+}
+
+// 冠军占比榜：统计该题库里每个冠军被选中的比例，展示前 5 名并高亮本局冠军
+function renderChampionShare(numbers, winner) {
+  const wrap = $("#championShareWrap");
+  const listEl = $("#championShareList");
+  const totalEl = $("#championShareTotal");
+  const entries = Object.entries(numbers.champions || {}).filter(([, count]) => count > 0);
+  const total = entries.reduce((sum, [, count]) => sum + count, 0);
+  if (!total) { wrap.classList.add("hidden"); listEl.innerHTML = ""; totalEl.textContent = ""; return; }
+  wrap.classList.remove("hidden");
+  const ranked = entries.sort((a, b) => b[1] - a[1]);
+  const top = ranked.slice(0, 5);
+  const rows = top.map(([name, count], index) => {
+    const pct = Math.round(count / total * 100);
+    const isWinner = name === winner;
+    return `<li class="champion-share-item${isWinner ? " is-winner" : ""}">
+      <span class="cs-rank">${index + 1}</span>
+      <div class="cs-body">
+        <div class="cs-line"><span class="cs-name">${escapeHtml(name)}${isWinner ? '<span class="cs-you">你的冠军</span>' : ""}</span><span class="cs-pct">${pct}%</span></div>
+        <div class="cs-bar"><span style="width:${Math.max(2, pct)}%"></span></div>
+      </div>
+    </li>`;
+  }).join("");
+  // 本局冠军若没进前 5，额外补一行显示它的真实排名
+  const winnerRank = ranked.findIndex(([name]) => name === winner);
+  let extra = "";
+  if (winnerRank >= 5) {
+    const count = ranked[winnerRank][1];
+    const pct = Math.round(count / total * 100);
+    extra = `<li class="champion-share-item is-winner cs-outside">
+      <span class="cs-rank">${winnerRank + 1}</span>
+      <div class="cs-body">
+        <div class="cs-line"><span class="cs-name">${escapeHtml(winner)}<span class="cs-you">你的冠军</span></span><span class="cs-pct">${pct}%</span></div>
+        <div class="cs-bar"><span style="width:${Math.max(2, pct)}%"></span></div>
+      </div>
+    </li>`;
+  }
+  listEl.innerHTML = rows + extra;
+  totalEl.textContent = `共 ${formatNumber(total)} 位玩家的冠军选择`;
 }
 
 async function ensureResultSaved() {
@@ -697,6 +772,12 @@ $("#themeGrid").addEventListener("click", e => {
 $("#themeSearchButton").addEventListener("click", applyThemeSearch);
 $("#themeSearch").addEventListener("input", applyThemeSearch);
 $("#themeSearch").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); applyThemeSearch(); } });
+$("#themeSort").value = themeSort;
+$("#themeSort").addEventListener("change", e => {
+  themeSort = e.target.value === "new" ? "new" : "plays";
+  try { localStorage.setItem("pickone-sort", themeSort); } catch {}
+  renderThemes();
+});
 [$("#createButton"), $("#heroCreateButton")].forEach(button => button.addEventListener("click", openCreate));
 $("#heroStartButton").addEventListener("click", () => startGame(themes[0]));
 $("#homeButton").addEventListener("click", () => { location.hash = ""; showView($("#homeView")); });
