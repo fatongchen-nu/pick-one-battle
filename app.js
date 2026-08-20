@@ -112,11 +112,22 @@ const PRESETS = [
 ];
 
 const $ = (selector) => document.querySelector(selector);
-const views = [$("#homeView"), $("#gameView"), $("#resultView")];
+const views = [$("#homeView"), $("#gameView"), $("#resultView"), $("#tierView"), $("#ocView"), $("#checkView"), $("#gridView")];
 let themes = [...PRESETS, ...loadCustomThemes()];
 let game = null;
+let tier = null;
+let playMode = "battle";           // "battle" 二选一 / "tier" 梯度表
 let toastTimer;
 let themeQuery = "";
+
+// 梯度表档位（热→冷），与报纸风调色一致
+const TIERS = [
+  { key: "S", label: "S", color: "#ff5c35", text: "#ffffff" },
+  { key: "A", label: "A", color: "#ff9a3d", text: "#171716" },
+  { key: "B", label: "B", color: "#d9f64f", text: "#171716" },
+  { key: "C", label: "C", color: "#8ee06b", text: "#171716" },
+  { key: "D", label: "D", color: "#b8c7ff", text: "#171716" }
+];
 let themeSort = loadThemeSort();
 
 function loadThemeSort() {
@@ -211,6 +222,48 @@ function renderThemes() {
     : "";
   grid.innerHTML = empty + cards + createCard;
   renderCommunity();
+  renderNewThemes();
+}
+
+// 题库创建时间（毫秒）：远程取 created_at，用户自建从 id `custom-<ts>` 解析，内置题库无（返回 null）
+function themeCreatedAt(theme) {
+  if (theme.createdAt) { const t = Date.parse(theme.createdAt); if (!isNaN(t)) return t; }
+  const m = /^custom-(\d+)$/.exec(theme.id || "");
+  return m ? Number(m[1]) : null;
+}
+
+function relDays(ts) {
+  const now = new Date(); const then = new Date(ts);
+  const d0 = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const d1 = Date.UTC(then.getFullYear(), then.getMonth(), then.getDate());
+  const days = Math.round((d0 - d1) / 86400000);
+  if (days <= 0) return "今天"; if (days === 1) return "昨天"; return `${days} 天前`;
+}
+
+// 本周新题榜：最近 7 天创建的公开题库，最新在前
+function renderNewThemes() {
+  const section = $("#newThemesSection");
+  if (!section) return;
+  const weekAgo = Date.now() - 7 * 86400000;
+  const list = themes
+    .filter(t => t.public && !t.pending)
+    .map(t => ({ t, ts: themeCreatedAt(t) }))
+    .filter(x => x.ts && x.ts >= weekAgo)
+    .sort((a, b) => b.ts - a.ts)
+    .slice(0, 8);
+  if (!list.length) { section.classList.add("hidden"); $("#newThemesBoard").innerHTML = ""; return; }
+  section.classList.remove("hidden");
+  $("#newThemesBoard").innerHTML = list.map(({ t, ts }) => {
+    const stats = themeNumbers(t);
+    return `
+    <button class="new-theme-card" data-theme="${escapeHtml(t.id)}" aria-label="开始 ${escapeHtml(t.title)}">
+      <span class="nt-badge">NEW</span>
+      <span class="nt-emoji">${escapeHtml(t.emoji)}</span>
+      <h3>${escapeHtml(t.title)}</h3>
+      <span class="nt-meta">${t.items.length} 强 · ${relDays(ts)}${t.author ? ` · by ${escapeHtml(t.author)}` : ""}</span>
+      <span class="nt-plays">▶ ${formatNumber(stats.plays)} 局</span>
+    </button>`;
+  }).join("");
 }
 
 function applyThemeSearch() {
@@ -394,6 +447,9 @@ function showResult(options = {}) {
   const numbers = themeNumbers(game.theme);
   $("#resultPlayCount").textContent = formatNumber(numbers.plays);
   renderChampionShare(numbers, winner);
+  renderRarity(numbers, winner);
+  if (game.vsWith && !options.fromShare) renderVsComparison(game.vsWith, winner);
+  else $("#vsPanel").classList.add("hidden");
   $("#permalinkStatus").textContent = options.fromShare
     ? "● 分享快照 · 可跨设备打开"
     : window.PickOneDB.online ? "● 永久结果已保存" : "● 本机保存 · 分享链接可跨设备打开";
@@ -414,6 +470,29 @@ function renderResultBracket() {
       }).join("")}
     </div></div>`;
   }).join("");
+}
+
+// 冠军稀有度：用全站冠军票占比给本局冠军定一个 SSR/SR/R/N 等级（少数派钩子）。数据太少不显示。
+function championRarity(numbers, winner) {
+  const champs = numbers.champions || {};
+  const total = Object.values(champs).reduce((a, b) => a + b, 0);
+  const count = champs[winner] || 0;
+  if (total < 10 || !count) return null;
+  const share = Math.max(1, Math.round(count / total * 100));
+  let tier, blurb;
+  if (share < 8)       { tier = "SSR"; blurb = "超稀有 · 你是绝对少数派"; }
+  else if (share < 18) { tier = "SR";  blurb = "稀有 · 小众品味"; }
+  else if (share < 33) { tier = "R";   blurb = "少见 · 有点特别"; }
+  else                 { tier = "N";   blurb = "大众之选 · 和多数人一样"; }
+  return { share, count, total, tier, blurb };
+}
+function renderRarity(numbers, winner) {
+  const line = $("#rarityLine"); if (!line) return;
+  const r = championRarity(numbers, winner);
+  if (!r) { line.hidden = true; line.textContent = ""; return; }
+  line.hidden = false;
+  line.dataset.tier = r.tier;
+  line.innerHTML = `<b class="rarity-tag">${r.tier}</b><span>你的冠军「${escapeHtml(winner)}」只有 <b>${r.share}%</b> 的人选到 · ${escapeHtml(r.blurb)}</span>`;
 }
 
 // 冠军占比榜：统计该题库里每个冠军被选中的比例，展示前 5 名并高亮本局冠军
@@ -523,7 +602,7 @@ async function createTheme(event) {
   saveCustomThemes();
   renderThemes();
   $("#createDialog").close();
-  startGame(theme);
+  if (playMode === "tier") startTierList(theme); else startGame(theme);
 }
 
 function renderBracket() {
@@ -555,6 +634,82 @@ async function shareResult() {
   } catch (error) { if (error.name !== "AbortError") showToast("分享失败，请再试一次"); }
 }
 
+/* ===================== 双人对比 / 契合度 ===================== */
+
+let pendingVs = null;   // 打开对比链接后，等待本人玩完对比的对方结果
+
+// 复制"拉朋友对比"链接：#vs=<resultId>（在线）或 #vsd=<编码>（快照）
+async function shareVs() {
+  const resultId = await ensureResultSaved();
+  const base = `${location.origin}${location.pathname}`;
+  const url = (resultId && window.PickOneDB.online) ? `${base}#vs=${resultId}` : `${base}#vsd=${encodeShareData()}`;
+  try {
+    await copyText(url);
+    showToast("对比链接已复制，发给朋友让 TA 也来选！");
+  } catch (e) { if (e.name !== "AbortError") showToast("复制失败，请再试一次"); }
+}
+
+// 收到对比链接：加载对方结果，然后让本人玩同一题库
+function beginVs(a) {
+  const theme = { id: "shared", remoteId: a.remoteId, title: a.title, emoji: a.emoji, items: a.initialItems, author: a.author, description: "和朋友对比口味" };
+  pendingVs = { title: a.title, author: a.author || "朋友", initialItems: a.initialItems, rounds: a.rounds, champion: a.rounds.at(-1)[0] };
+  location.hash = "";
+  showToast(`${pendingVs.author} 挑战你玩「${a.title}」，选出你的冠军来对比！`);
+  startGame(theme);
+  game.vsWith = pendingVs;
+}
+
+// 每个选项的"走到第几轮"分数（越大越靠后/越喜欢）
+function itemScores(initialItems, rounds) {
+  const score = {};
+  (initialItems || []).forEach(it => score[it] = 0);
+  (rounds || []).forEach((round, i) => round.forEach(it => { if (score[it] === undefined || i > score[it]) score[it] = i; }));
+  return score;
+}
+function vsCompare(a, b) {
+  const as = itemScores(a.initialItems, a.rounds), bs = itemScores(b.initialItems, b.rounds);
+  const items = Object.keys(as).filter(it => bs[it] !== undefined);
+  const maxA = Math.max(1, ...items.map(it => as[it])), maxB = Math.max(1, ...items.map(it => bs[it]));
+  let diff = 0;
+  const rows = items.map(it => { const na = as[it] / maxA, nb = bs[it] / maxB; diff += Math.abs(na - nb); return { it, na, nb, d: Math.abs(na - nb) }; });
+  const pct = items.length ? Math.max(0, Math.round((1 - diff / items.length) * 100)) : 0;
+  const aChamp = a.rounds.at(-1)[0], bChamp = b.rounds.at(-1)[0];
+  const agree = rows.filter(r => r.na >= 0.7 && r.nb >= 0.7).sort((x, y) => (y.na + y.nb) - (x.na + x.nb)).slice(0, 3).map(r => r.it);
+  const diverge = [...rows].sort((x, y) => y.d - x.d).slice(0, 3).map(r => r.it);
+  return { pct, aChamp, bChamp, sameChamp: aChamp === bChamp, agree, diverge, count: items.length };
+}
+
+function renderVsComparison(a, myWinner) {
+  const b = { initialItems: game.initialItems, rounds: game.rounds };
+  const r = vsCompare(a, b);
+  const label = r.pct >= 80 ? "灵魂契合 · 简直一个人" : r.pct >= 55 ? "挺合拍 · 品味有共鸣" : r.pct >= 30 ? "各有各的爱" : "互补型 · 口味天差地别";
+  const agreeLine = r.agree.length ? `<div class="vs-tags"><small>你俩都偏爱</small>${r.agree.map(x => `<span class="vs-chip love">${escapeHtml(x)}</span>`).join("")}</div>` : "";
+  const divLine = r.diverge.length ? `<div class="vs-tags"><small>分歧最大</small>${r.diverge.map(x => `<span class="vs-chip split">${escapeHtml(x)}</span>`).join("")}</div>` : "";
+  $("#vsCard").innerHTML = `
+    <div class="vs-c-head">
+      <p class="vs-c-eyebrow">你 vs ${escapeHtml(a.author || "朋友")} · ${escapeHtml(a.title)}</p>
+      <div class="vs-c-score"><b>${r.pct}%</b><span>口味契合度</span></div>
+      <p class="vs-c-label">${label}${r.sameChamp ? ` · 你俩冠军都是「${escapeHtml(r.aChamp)}」！` : ""}</p>
+    </div>
+    <div class="vs-c-champs">
+      <div class="vs-c-side"><small>${escapeHtml(a.author || "朋友")}的冠军</small><b>${escapeHtml(r.aChamp)}</b></div>
+      <div class="vs-c-mid">VS</div>
+      <div class="vs-c-side you"><small>你的冠军</small><b>${escapeHtml(r.bChamp)}</b></div>
+    </div>
+    ${agreeLine}${divLine}
+    <div class="vs-c-watermark">🎴 pickpickpick.online · 极限二选一 · 口味契合度</div>`;
+  $("#vsPanel").classList.remove("hidden");
+}
+
+async function downloadVsCard() {
+  if (typeof html2canvas !== "function") { showToast("图片库未加载，请检查网络"); return; }
+  showToast("正在生成对比图…");
+  try {
+    const canvas = await html2canvas($("#vsCard"), { backgroundColor: "#ffffff", scale: 2, logging: false, windowWidth: $("#vsCard").scrollWidth });
+    saveCanvas(canvas, `口味契合度-${pendingVs ? pendingVs.author : "对比"}.png`);
+  } catch { showToast("生成失败，请再试一次"); }
+}
+
 async function copyText(text) {
   if (navigator.clipboard?.writeText) {
     try { await navigator.clipboard.writeText(text); return; }
@@ -572,7 +727,29 @@ async function copyText(text) {
   if (!copied) throw new Error("copy failed");
 }
 
+function decodeShareHash(encoded) {
+  const base = encoded.replace(/-/g, "+").replace(/_/g, "/");
+  const bytes = Uint8Array.from(atob(base), c => c.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
 async function loadSharedResult() {
+  // 双人对比：加载对方结果，让本人玩同一题库
+  const vsId = location.hash.match(/^#vs=(.+)$/)?.[1];
+  if (vsId) {
+    try {
+      const data = await window.PickOneDB.getResult(vsId);
+      if (!data) throw new Error("not found");
+      beginVs(data); return true;
+    } catch { location.hash = ""; showToast("这个对比邀请不存在或已失效"); }
+  }
+  const vsEnc = location.hash.match(/^#vsd=(.+)$/)?.[1];
+  if (vsEnc) {
+    try {
+      const d = decodeShareHash(vsEnc);
+      beginVs({ title: d.t, emoji: d.e, author: d.a, initialItems: d.i, rounds: d.r }); return true;
+    } catch { location.hash = ""; }
+  }
   const resultId = location.hash.match(/^#r=(.+)$/)?.[1];
   if (resultId) {
     try {
@@ -598,7 +775,7 @@ async function loadSharedResult() {
   } catch { location.hash = ""; return false; }
 }
 
-const REPORT_QR = "data:image/png;base64,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";
+const REPORT_QR = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXIAAAFyCAIAAABnRsZeAAAF5UlEQVR42u3dS27cMBBAwTDQ/a883hlZCUbarf6oau+YoiYPHKBBn8/n8wfg9/y1BYCsALICyAqArACyAsgKgKwAsgLICoCsALICyAogKwCyAsgKICsAsgLICiArALICyAogKwCyAsgKICuArADICiArgKwAyAogK4CsAMgKICuArADICiArgKwA73NV/eJzzrKt/Hw+Sc8b+Zfvf3biG9z3RBP3ymkFkBVAVgBkBZAVQFYAWQGQFUBWgPWunsuqmg68lzcpG/m9edO9kSeauFdv+0w6rQC+BAGyAiArgKwAsgIgK4CsALICcOOauOiqydGea857ovs1Vz1Rz7nSiZ9JpxVAVgBZAZAVQFYAWQGQFUBWAFkBuHHZgmdEbn7teWtsz/ndiTOpTisAsgLICiArALICyAogK4CsAMgK0JAp2/EiM7iRedbIZHDezDFOK4CsAMgKICuArADICiArgKwAsgLwK0ZO2U6cs8y7rTYyz5r3RHm74TPptALICoCsALICyAqArACyAsgKgKwAD2g6ZRuZ4OTnO5k33TvxZ30mnVYAWQFkBUBWAFkBZAVAVgBZAWQF4NtxB2eL1/CyudKqJ8JpBZAVAFkBZAWQFUBWAGQFkBVAVgB+qGzKtudcaWTN93rOhvZ8oomryptmnjiR7LQCyAogK4CsAMgKICuArADICiArwALXvkfqeQNr1ZonvqPIPk/cybzPldMK4EsQgKwAsgLICiArtgCQFUBWAFkB+G+XLfhXzznavFVV3cCad8dqz4nVnm/faQXwJQiQFQBZAWQFkBUAWQFkBZAVgBun6m/KT5w7rJpJzfvZvOet+uTkrbnn58ppBfAlCEBWAFkBZAVAVgBZAWQFQFaAJE2nbHvOs96bOCu5b6/e9varZo6dVgBZAWQFQFYAWQFkBZAVAFkBZAVY77iv9Jk1R+TddNtzN6pmYd+2k04rgC9BgKwAyAogK4CsAMgKICuArADcuHoua+JEY9Xz5s2kVq05b1UTp7er3q/TCiArgKwAyAogK4CsAMgKICuArAAv13TKduK0a+SJItOfeZOjkTVPfPuRVVVN6PacDHZaAWQFkBVAVgBkBZAVQFYAZAWQFWCB0/PW2Kpp1573wvacOu05+9tzzfv+HzmtALICyAqArACyAsgKICsAsgLICrBe2V22efOOVbOw96pmQ/e93yo954adVgBfggBkBZAVQFYAZAWQFUBWAGQFSFI2ZVs1WZg3sdpzNjRvzZGp07y96vl+3zah67QCyAogK4CsAMgKICuArADICiArwAJn4mxoz5tQ3aH7zBPte0dOKwCyAsgKICsAsgLICiArgKwAyArQ0MK7bHvekpu35n23Ak98+1XTzD2ne51WAFkBZAWQFQBZAWQFkBUAWQFkBVjguIPzoY0OzEpOvLu36omq9qrqltyenw2nFUBWAFkBZAVAVgBZAWQFQFYAWQEWWHiXbZWe88r79rlqryLv922z7E4rgKwAsgLICoCsALICyAqArACyAixw9VzWvonVnjOaefekVt1Wu+9TN3HNTiuArACyAsgKgKwAsgLICoCsALICLHBNXPS+OcuqJ4r83om35FatOW9euefn2WkFkBVAVgBZAZAVQFYAWQGQFUBWgAUuW9Bf1RRm3kxqZOo07x7cibvRc9bZaQWQFUBWAFkBkBVAVgBZAZAVQFaABUzZPmTibbU9p06rRHYjbzLYaQXwJQhAVgBZAWQFQFYAWQFkBUBWgCSn6m/K500l7lvzvgnOqvndnvfC9vy0O60AsgLICoCsALICyAqArACyAsgK8HJN77KdeH9n5Inu5yyrbquteoNVc8N5v3fiBLbTCuBLECArALICyAogKwCyAsgKICvAy51992gCTiuArADICiArgKwAyAogK4CsALICICuArACyAiArgKwAsgIgK4CsALICICuArACyAsgKgKwAsgLICoCsALICyAqArACyAsgKICsAsgLICiArALICyAogKwCyAjzsC4LeHxfriRtEAAAAAElFTkSuQmCC";
 
 // 加载图片（data URL），失败返回 null，不阻塞下载
 function loadImage(src) {
@@ -646,6 +823,7 @@ async function downloadCard() {
   const filler = ((($("#fillerName") || {}).value) || "").trim();
   const author = game.theme.author || "";
   const dateStr = new Intl.DateTimeFormat("zh-CN", { year: "numeric", month: "long", day: "numeric" }).format(new Date());
+  const rarity = championRarity(themeNumbers(game.theme), champ);
 
   // ---- 浅色报纸风（与结果页「完整晋级路线」一致）----
   const C = {
@@ -653,6 +831,7 @@ async function downloadCard() {
     advBg: "#fff0eb", advText: "#b73318", slotBd: "#c5c5c5", colSep: "#b8b8b8",
     white: "#ffffff", muted: "#746d63"
   };
+  const TIER_COLOR = { SSR: "#ff5c35", SR: "#3157d5", R: "#5aa469", N: "#8a8378" };
 
   // 尺寸分档：选项越多，格子越小
   let slotH, gap, font, champH, champFont;
@@ -688,7 +867,7 @@ async function downloadCard() {
   // ---- 背景与页眉 ----
   ctx.fillStyle = C.paper; ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = C.orange; ctx.fillRect(sideMargin, 40, 6, 132);
-  const textLeft = sideMargin + 22, headMaxW = W - textLeft - sideMargin;
+  const textLeft = sideMargin + 22, headMaxW = W - textLeft - sideMargin - (rarity ? 154 : 0);
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ctx.fillStyle = C.orange; ctx.font = "800 20px sans-serif";
   ctx.fillText("极限二选一 · 完整晋级路线", textLeft, 66);
@@ -703,6 +882,24 @@ async function downloadCard() {
   parts.push(dateStr);
   ctx.fillStyle = C.muted; ctx.font = "600 15px sans-serif";
   ctx.fillText(truncate(parts.join("   ·   "), headMaxW), textLeft, 186);
+
+  // ---- 稀有度印章（右上角，少数派钩子）----
+  if (rarity) {
+    const br = 60, bx = W - sideMargin - br - 6, by = 104;
+    const col = TIER_COLOR[rarity.tier] || C.orange;
+    ctx.save();
+    ctx.translate(bx, by); ctx.rotate(-8 * Math.PI / 180);
+    ctx.beginPath(); ctx.arc(0, 0, br, 0, Math.PI * 2);
+    ctx.fillStyle = col; ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = C.ink; ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, br - 9, 0, Math.PI * 2);
+    ctx.setLineDash([4, 5]); ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(255,255,255,.75)"; ctx.stroke(); ctx.setLineDash([]);
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "#fff";
+    ctx.font = "900 32px sans-serif"; ctx.fillText(rarity.tier, 0, -10);
+    ctx.font = "800 16px sans-serif";
+    ctx.fillText(rarity.share + "% " + (rarity.tier === "N" ? "大众款" : "少数派"), 0, 22);
+    ctx.restore();
+  }
 
   // ---- 白色对阵卡（硬阴影 + 墨线边框）----
   ctx.fillStyle = C.ink; ctx.fillRect(cardLeft + shadow, cardTop + shadow, bodyW, cardH);
@@ -747,7 +944,7 @@ async function downloadCard() {
   const qrS = 100, footTop = cardTop + cardH + shadow + 22;
   ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
   ctx.font = "800 22px sans-serif"; const w1 = ctx.measureText("扫码来玩").width;
-  ctx.font = "700 18px sans-serif"; const w2 = ctx.measureText("pick-one-battle.vercel.app").width;
+  ctx.font = "700 18px sans-serif"; const w2 = ctx.measureText("pickpickpick.online").width;
   const groupW = qrS + 18 + Math.max(w1, w2), gx = W / 2 - groupW / 2, tx = gx + qrS + 18;
   if (qr) {
     ctx.fillStyle = C.white; ctx.fillRect(gx - 6, footTop - 6, qrS + 12, qrS + 12);
@@ -755,10 +952,511 @@ async function downloadCard() {
     ctx.drawImage(qr, gx, footTop, qrS, qrS);
   }
   ctx.fillStyle = C.ink; ctx.font = "800 22px sans-serif"; ctx.fillText("扫码来玩", tx, footTop + 42);
-  ctx.fillStyle = C.orange; ctx.font = "700 18px sans-serif"; ctx.fillText("pick-one-battle.vercel.app", tx, footTop + 72);
+  ctx.fillStyle = C.orange; ctx.font = "700 18px sans-serif"; ctx.fillText("pickpickpick.online", tx, footTop + 72);
 
   saveCanvas(canvas, `极限二选一-${champ}.png`);
 }
+
+/* ===================== 梯度表排位 ===================== */
+
+function startTierList(theme) {
+  tier = {
+    theme,
+    assign: {},                        // name -> tier key
+    pool: shuffle(theme.items),        // 待分配（随机初始顺序，避免总是原序）
+    active: TIERS[0].key               // 当前档位
+  };
+  $("#tierTitle").textContent = theme.title;
+  $("#tierEmoji").textContent = theme.emoji;
+  try { const f = $("#tierFiller"); if (f) f.value = localStorage.getItem("pickone-filler") || ""; } catch {}
+  showView($("#tierView"));
+  renderTier();
+}
+
+function tierItemsOf(key) {
+  // 按题库原始顺序稳定排列该档位内的选项
+  return tier.theme.items.filter(name => tier.assign[name] === key);
+}
+
+function renderTier() {
+  const board = $("#tierBoard");
+  board.innerHTML = TIERS.map(t => {
+    const chips = tierItemsOf(t.key).map(name =>
+      `<button class="tier-chip placed" data-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("");
+    const isActive = tier.active === t.key;
+    return `<div class="tier-row ${isActive ? "active" : ""}" data-tier="${t.key}">
+      <button class="tier-label" data-tier="${t.key}" style="background:${t.color};color:${t.text}" aria-label="选中 ${t.label} 档">${t.label}</button>
+      <div class="tier-slots" data-tier="${t.key}">${chips}<span class="tier-slot-hint">${isActive ? "← 当前档位，点下面的选项放进来" : "点这里设为当前档位"}</span></div>
+    </div>`;
+  }).join("");
+
+  const pool = $("#tierPool");
+  pool.innerHTML = tier.pool.length
+    ? tier.pool.map(name => `<button class="tier-chip" data-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")
+    : `<p class="tier-pool-empty">全部分配完了 🎉 可以生成梯度图了。</p>`;
+
+  const total = tier.theme.items.length, done = total - tier.pool.length;
+  $("#tierProgress").textContent = `已分配 ${done} / ${total}`;
+  $("#tierPoolCount").textContent = String(tier.pool.length);
+}
+
+function setActiveTier(key) {
+  if (!TIERS.some(t => t.key === key)) return;
+  tier.active = key;
+  renderTier();
+}
+
+function placeInActive(name) {
+  if (!tier.pool.includes(name)) return;
+  tier.assign[name] = tier.active;
+  tier.pool = tier.pool.filter(n => n !== name);
+  renderTier();
+}
+
+function returnToPool(name) {
+  if (tier.assign[name] === undefined) return;
+  delete tier.assign[name];
+  // 放回原始顺序对应的位置附近：简单起见追加到池尾
+  if (!tier.pool.includes(name)) tier.pool.push(name);
+  renderTier();
+}
+
+function resetTier() {
+  if (!tier) return;
+  tier.assign = {};
+  tier.pool = shuffle(tier.theme.items);
+  tier.active = TIERS[0].key;
+  tier.submitted = false;
+  $("#tierConsensus").classList.add("hidden");
+  renderTier();
+}
+
+// 梯度共识：把全站计数（每个选项在各档的票数）折算成"大众档"，与用户分档对比
+function tierConsensus(counters, assign) {
+  const keys = TIERS.map(t => t.key);
+  const byItem = {};
+  (counters || []).forEach(({ item, bucket, count }) => {
+    if (item === "__submissions" || !keys.includes(bucket)) return;
+    (byItem[item] || (byItem[item] = {}))[bucket] = (byItem[item][bucket] || 0) + Number(count);
+  });
+  const crowdTier = {};
+  Object.entries(byItem).forEach(([item, buckets]) => {
+    let best = null, bc = 0;
+    keys.forEach(k => { const c = buckets[k] || 0; if (c > bc) { bc = c; best = k; } });
+    if (best) crowdTier[item] = best;
+  });
+  const compared = Object.keys(assign).filter(it => crowdTier[it]);
+  let match = 0; const divergences = [];
+  compared.forEach(it => {
+    const you = assign[it], crowd = crowdTier[it];
+    if (you === crowd) match++;
+    else divergences.push({ item: it, you, crowd, dist: Math.abs(keys.indexOf(you) - keys.indexOf(crowd)) });
+  });
+  divergences.sort((a, b) => b.dist - a.dist);
+  return { comparedCount: compared.length, match, diverge: compared.length - match, divergences };
+}
+
+async function showTierConsensus() {
+  if (!tier) return;
+  const placed = Object.keys(tier.assign);
+  if (placed.length < 3) { showToast("至少分好 3 个选项，再来对比大众梯度"); return; }
+  const remoteId = tier.theme.remoteId;
+  if (!window.PickOneDB.online || !remoteId) { showToast("大众梯度需要联网题库，离线暂不支持"); return; }
+  const scope = "tier:" + remoteId;
+  const btn = $("#tierConsensusButton");
+  btn.disabled = true; const label = btn.textContent; btn.textContent = "统计中…";
+  try {
+    if (!tier.submitted) {
+      tier.submitted = true;
+      const rows = placed.map(it => ({ scope, item: it, bucket: tier.assign[it] }));
+      rows.push({ scope, item: "__submissions", bucket: "n" });
+      await window.PickOneDB.bumpCounters(rows);
+    }
+    const counters = await window.PickOneDB.getCounters(scope);
+    const res = tierConsensus(counters, tier.assign);
+    const panel = $("#tierConsensus");
+    panel.classList.remove("hidden");
+    if (res.comparedCount < 1) {
+      panel.innerHTML = `<p class="tc-empty">你是这个题库梯度榜的先行者 —— 还没有足够的大众数据可对比，过阵子再来看 🌱</p>`;
+      return;
+    }
+    const uniq = Math.round(res.diverge / res.comparedCount * 100);
+    const headline = uniq >= 50 ? `独特品味 · 你有 ${uniq}% 的选项和大众放得不一样`
+      : uniq <= 20 ? `和大众很合拍 · 只有 ${uniq}% 不一样`
+      : `略有个性 · ${uniq}% 和大众不同`;
+    const rows = res.divergences.slice(0, 6).map(d =>
+      `<li><span class="tc-item">${escapeHtml(d.item)}</span><span class="tc-vs"><b class="tc-you">你 ${d.you}</b> · 大众 ${d.crowd}</span></li>`).join("");
+    panel.innerHTML = `<div class="tc-head"><b>${headline}</b><small>基于 ${res.comparedCount} 个有大众数据的选项</small></div>` +
+      (rows ? `<ul class="tc-list">${rows}</ul>` : `<p class="tc-empty">你和大众的分档完全一致，太合拍了！</p>`);
+  } catch {
+    showToast("大众梯度加载失败，稍后再试");
+  } finally {
+    btn.disabled = false; btn.textContent = label;
+  }
+}
+
+// 生成报纸风梯度图：左侧彩色档位块 + 右侧选项药丸（自动换行）
+async function downloadTierCard() {
+  const canvas = $("#shareCanvas");
+  const ctx = canvas.getContext("2d");
+  const filler = ((($("#tierFiller") || {}).value) || "").trim();
+  const author = tier.theme.author || "";
+  const dateStr = new Intl.DateTimeFormat("zh-CN", { year: "numeric", month: "long", day: "numeric" }).format(new Date());
+
+  const C = { paper: "#f6f0e6", ink: "#171716", orange: "#ff5c35", white: "#ffffff", muted: "#746d63", slot: "#fffaf1" };
+  const sideMargin = 46, W = 1080, headerH = 208, footerH = 156, shadow = 9;
+  const cardLeft = sideMargin, cardW = W - sideMargin * 2 - shadow;
+  const labelW = 96, rowPadX = 16, rowPadY = 14, chipH = 40, chipGap = 10, chipPadX = 14, rowGap = 0, minRowH = 74;
+  const chipFont = 19, labelFont = 40;
+  const contentW = cardW - labelW;
+
+  // 预排：算出每个档位的换行与高度
+  ctx.font = `800 ${chipFont}px sans-serif`;
+  const rows = TIERS.map(t => {
+    const names = tierItemsOf(t.key);
+    const lines = [];
+    let line = [], lineW = 0;
+    const avail = contentW - rowPadX * 2;
+    names.forEach(name => {
+      const w = Math.min(ctx.measureText(name).width + chipPadX * 2, avail);
+      if (line.length && lineW + w + chipGap > avail) { lines.push(line); line = []; lineW = 0; }
+      line.push({ name, w }); lineW += w + chipGap;
+    });
+    if (line.length) lines.push(line);
+    const h = Math.max(minRowH, rowPadY * 2 + (lines.length || 1) * chipH + Math.max(0, (lines.length || 1) - 1) * chipGap);
+    return { t, lines, h };
+  });
+
+  const cardTop = headerH;
+  const bodyH = rows.reduce((s, r) => s + r.h, 0) + (rows.length - 1) * rowGap;
+  const H = cardTop + bodyH + shadow + footerH;
+  canvas.width = W; canvas.height = H;
+
+  const fit = (text, maxW, weight, start, min) => {
+    let fs = start;
+    for (; fs > min; fs--) { ctx.font = `${weight} ${fs}px sans-serif`; if (ctx.measureText(text).width <= maxW) break; }
+    return fs;
+  };
+  const truncate = (name, maxW) => {
+    if (ctx.measureText(name).width <= maxW) return name;
+    let s = name; while (s.length > 1 && ctx.measureText(s + "…").width > maxW) s = s.slice(0, -1);
+    return s + "…";
+  };
+
+  // 背景 + 页眉
+  ctx.fillStyle = C.paper; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = C.orange; ctx.fillRect(sideMargin, 40, 6, 132);
+  const textLeft = sideMargin + 22, headMaxW = W - textLeft - sideMargin;
+  ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = C.orange; ctx.font = "800 20px sans-serif";
+  ctx.fillText("极限二选一 · 梯度表排位", textLeft, 66);
+  const tfs = fit(tier.theme.title, headMaxW, "900", 46, 24);
+  ctx.fillStyle = C.ink; ctx.font = `900 ${tfs}px sans-serif`;
+  ctx.fillText(truncate(tier.theme.title, headMaxW), textLeft, 118);
+  const parts = [];
+  if (filler) parts.push("填表人 by " + filler);
+  if (author) parts.push("题库 by " + author);
+  parts.push(dateStr);
+  ctx.fillStyle = C.muted; ctx.font = "600 16px sans-serif";
+  ctx.fillText(truncate(parts.join("   ·   "), headMaxW), textLeft, 168);
+
+  // 卡片阴影 + 底
+  ctx.fillStyle = C.ink; ctx.fillRect(cardLeft + shadow, cardTop + shadow, cardW, bodyH);
+  ctx.fillStyle = C.white; ctx.fillRect(cardLeft, cardTop, cardW, bodyH);
+
+  // 逐行绘制
+  let y = cardTop;
+  rows.forEach(({ t, lines, h }) => {
+    // 档位色块
+    ctx.fillStyle = t.color; ctx.fillRect(cardLeft, y, labelW, h);
+    ctx.fillStyle = t.text; ctx.font = `900 ${labelFont}px sans-serif`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(t.label, cardLeft + labelW / 2, y + h / 2);
+    // 分隔线
+    ctx.strokeStyle = "#d9d2c6"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cardLeft, y + h); ctx.lineTo(cardLeft + cardW, y + h); ctx.stroke();
+    // 选项药丸
+    const startX = cardLeft + labelW + rowPadX;
+    let cy = y + rowPadY;
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    lines.forEach(line => {
+      let cx = startX;
+      line.forEach(({ name, w }) => {
+        ctx.fillStyle = C.slot; ctx.fillRect(cx, cy, w, chipH);
+        ctx.strokeStyle = t.color; ctx.lineWidth = 2; ctx.strokeRect(cx, cy, w, chipH);
+        ctx.fillStyle = C.ink; ctx.font = `800 ${chipFont}px sans-serif`;
+        ctx.fillText(truncate(name, w - chipPadX * 2), cx + chipPadX, cy + chipH / 2 + 1);
+        cx += w + chipGap;
+      });
+      cy += chipH + chipGap;
+    });
+    y += h;
+  });
+  // 外框
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.strokeRect(cardLeft, cardTop, cardW, bodyH);
+  // 档位块右边界竖线
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(cardLeft + labelW, cardTop); ctx.lineTo(cardLeft + labelW, cardTop + bodyH); ctx.stroke();
+
+  // 页脚二维码 + 网址
+  const qr = await qrImagePromise;
+  const qrS = 100, footTop = cardTop + bodyH + shadow + 22;
+  ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
+  ctx.font = "800 22px sans-serif"; const w1 = ctx.measureText("扫码来玩").width;
+  ctx.font = "700 18px sans-serif"; const w2 = ctx.measureText("pickpickpick.online").width;
+  const groupW = qrS + 18 + Math.max(w1, w2), gx = W / 2 - groupW / 2, tx = gx + qrS + 18;
+  if (qr) {
+    ctx.fillStyle = C.white; ctx.fillRect(gx - 6, footTop - 6, qrS + 12, qrS + 12);
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.strokeRect(gx - 6, footTop - 6, qrS + 12, qrS + 12);
+    ctx.drawImage(qr, gx, footTop, qrS, qrS);
+  }
+  ctx.fillStyle = C.ink; ctx.font = "800 22px sans-serif"; ctx.fillText("扫码来玩", tx, footTop + 42);
+  ctx.fillStyle = C.orange; ctx.font = "700 18px sans-serif"; ctx.fillText("pickpickpick.online", tx, footTop + 72);
+
+  saveCanvas(canvas, `梯度表-${tier.theme.title}.png`);
+}
+
+/* ===================== 成就清单（正确版 bingo） ===================== */
+
+const CHECKLISTS = [
+  {
+    id: "fandom-cert", emoji: "🪶", title: "同人女十级鉴定",
+    desc: "圈龄测试 · 中几个算几级",
+    items: ["分得清主受主攻", "磕过 ABO 设定", "搞过 / 避雷过 RPS（真人同人）", "耽美 / 百合 / GB 都吃过", "知道 BE / HE / 破镜重圆 / 双向奔赴", "有雷点，避雷避得很坚决", "给主页挂过 tag", "写过或画过同人产出", "瓶邮 / 私信过太太", "为 CP 或拆逆破防过", "手机相册存着几百张图", "给太太催过更 / 打过投", "爬过墙，也拆过官方", "认得常见 AO3 / lofter 标签", "屯过肉 / 存过合集", "看过带🚗的文不脸红", "为一句台词或一个眼神二刷原作", "剪过 CP 视频 / 做过表情包", "经历过塌房", "混过 lofter / AO3 / 长佩 / 超话", "追过一篇几十万字长文完结", "入坑靠一张图 / 一个视频 / 一句话", "参加过同人展 / only / 线下", "买过谷子（周边）", "控评 / 打投 / 反黑过", "嗑到失眠 / 上头到走神", "认得一堆圈黑话（awsl/xswl/dbq/ooc）", "给同担比过心，也暗暗较过劲", "'为爱发电'做过无偿产出", "本命 / 本命 CP 被提名会瞬间激动"]
+  },
+  {
+    id: "fandom-writer", emoji: "✍️", title: "同人写手 / 太太十级",
+    desc: "产出型选手自测",
+    items: ["码过字 / 画过图 / 剪过刀", "写过或画过 ABO", "写 / 看过带🚗的段落", "写过 PWP（有肉无剧情）", "开过长篇，也弃过坑", "日更过，也断更过", "被审核夹过 / 改词避雷过", "接过梗 / 开过盲盒点梗", "参加过合志 / 出过本", "被太太或读者翻过牌", "为一个梗查过一堆考据", "写完被自己刀哭", "存稿从来存不住", "有专门的产出小号", "收到过长评激动一整天", "给自己的 CP 补过番外", "蹲过热度，也甘于无人问津", "改文改到怀疑人生", "靠一条评论续命", "'产出一时爽，一直产出一直爽'"]
+  },
+  {
+    id: "musical-cert", emoji: "🎭", title: "音乐剧人十级症",
+    desc: "剧院常客自我鉴定",
+    items: ["同一部刷过 3 遍以上", "抢过前排或 SD 票", "会全场跟唱", "买过纪念册或周边", "追过某位卡司", "坐过 rush / 半价票", "听原声带入睡", "安利到朋友烦", "认得出音乐总监", "去外地或国外看过", "二楼最后一排也满足", "返场喊过安可", "剧院偶遇过演员", "歌单里音乐剧过半", "看谢幕哭过", "收集过 playbill", "给某首歌单曲循环一整周", "记得住返场彩蛋梗"]
+  },
+  {
+    id: "adult-life", emoji: "☕", title: "成年人的碎掉瞬间",
+    desc: "破防程度自测 · 越多越破碎",
+    items: ["连续熬夜到凌晨", "忘记今天星期几", "外卖比做饭多", "收藏 = 看过", "买课 = 学过", "周末一半在补觉", "报复性熬夜", "手机电量焦虑", "群消息已读不回", "'下次一定'从没兑现", "间歇性踌躇满志", "给购物车养蛊", "闹钟设 5 个还迟到", "社交电量 5 分钟耗尽", "体检报告不敢看", "奶茶续命", "通勤路上最清醒", "计划赶不上变化"]
+  }
+];
+
+let check = null;
+
+function openCheck() {
+  showView($("#checkView"));
+  $("#checkPicker").classList.remove("hidden");
+  $("#checkEditor").classList.add("hidden");
+  $("#checkBackPickerButton").setAttribute("hidden", "");
+  $("#checkTopTitle").textContent = "成就清单";
+  renderCheckPicker();
+}
+
+function renderCheckPicker() {
+  $("#checkGrid").innerHTML = CHECKLISTS.map(c => `
+    <button class="check-card-pick" data-list="${escapeHtml(c.id)}">
+      <span class="emoji">${escapeHtml(c.emoji)}</span>
+      <h3>${escapeHtml(c.title)}</h3>
+      <p>${c.items.length} 项 · ${escapeHtml(c.desc)}</p>
+    </button>`).join("");
+}
+
+function startChecklist(id) {
+  const list = CHECKLISTS.find(c => c.id === id); if (!list) return;
+  check = { list, checked: new Set(), submitted: false };
+  $("#checkPicker").classList.add("hidden");
+  $("#checkEditor").classList.remove("hidden");
+  $("#checkResultWrap").classList.add("hidden");
+  $("#checkForm").classList.remove("hidden");
+  $("#checkBackPickerButton").removeAttribute("hidden");
+  $("#checkTopTitle").textContent = list.title;
+  $("#checkFormTitle").textContent = list.title;
+  $("#checkItems").innerHTML = list.items.map((it, i) =>
+    `<button type="button" class="check-item" data-i="${i}"><span class="check-box">✓</span><span class="check-txt">${escapeHtml(it)}</span></button>`).join("");
+  updateCheckCounter();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function updateCheckCounter() {
+  $("#checkCounter").textContent = `已解锁 ${check.checked.size} / ${check.list.items.length}`;
+}
+
+function toggleCheckItem(btn) {
+  const i = +btn.dataset.i;
+  if (check.checked.has(i)) { check.checked.delete(i); btn.classList.remove("on"); }
+  else { check.checked.add(i); btn.classList.add("on"); }
+  updateCheckCounter();
+}
+
+// 结果：解锁率 + 分数分布百分位（依赖 stat_counters；离线只出个人分数）
+function computeCheckResult(counters, checkedItems, score, list) {
+  const checkedCount = {}, scoreDist = {}; let submissions = 0;
+  (counters || []).forEach(({ item, bucket, count }) => {
+    count = Number(count);
+    if (item === "__submissions") submissions += count;
+    else if (item === "__score") scoreDist[bucket] = (scoreDist[bucket] || 0) + count;
+    else if (bucket === "checked") checkedCount[item] = count;
+  });
+  let below = 0;
+  Object.entries(scoreDist).forEach(([s, c]) => { if (Number(s) < score) below += c; });
+  const percentile = submissions > 0 ? Math.round(below / submissions * 100) : null;
+  const rare = checkedItems
+    .map(it => ({ it, rate: (submissions > 0 && checkedCount[it] != null) ? checkedCount[it] / submissions : null }))
+    .filter(x => x.rate != null).sort((a, b) => a.rate - b.rate).slice(0, 3);
+  return { submissions, percentile, rare };
+}
+
+async function showCheckResult() {
+  if (!check) return;
+  const list = check.list;
+  const checkedItems = [...check.checked].map(i => list.items[i]);
+  const score = checkedItems.length;
+  const scope = "check:" + list.id;
+  const btn = $("#checkSubmitButton"); btn.disabled = true; const lbl = btn.textContent; btn.textContent = "统计中…";
+  let res = { submissions: 0, percentile: null, rare: [] };
+  try {
+    if (window.PickOneDB.online) {
+      if (!check.submitted) {
+        check.submitted = true;
+        const rows = checkedItems.map(it => ({ scope, item: it, bucket: "checked" }));
+        rows.push({ scope, item: "__submissions", bucket: "n" });
+        rows.push({ scope, item: "__score", bucket: String(score) });
+        await window.PickOneDB.bumpCounters(rows);
+      }
+      const counters = await window.PickOneDB.getCounters(scope);
+      res = computeCheckResult(counters, checkedItems, score, list);
+    }
+  } catch { /* 离线降级 */ }
+  finally { btn.disabled = false; btn.textContent = lbl; }
+  buildCheckCard(res, score);
+  $("#checkForm").classList.add("hidden");
+  $("#checkResultWrap").classList.remove("hidden");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function buildCheckCard(res, score) {
+  const list = check.list;
+  const total = list.items.length;
+  const filler = "";
+  const pctLine = res.percentile != null
+    ? `解锁数超过 <b>${res.percentile}%</b> 的人`
+    : `${window.PickOneDB.online ? "抢先体验 · 暂无大众数据" : "本机成绩 · 联网后可比大众"}`;
+  const rareLine = res.rare && res.rare.length
+    ? `<div class="cc-rare"><small>你解锁的冷门成就</small>${res.rare.map(r => `<span class="cc-rare-chip">${escapeHtml(r.it)} · ${Math.max(1, Math.round(r.rate * 100))}%</span>`).join("")}</div>`
+    : "";
+  const items = list.items.map((it, i) => {
+    const on = check.checked.has(i);
+    return `<div class="cc-item ${on ? "on" : "off"}"><span class="cc-mark">${on ? "✓" : "○"}</span><span>${escapeHtml(it)}</span></div>`;
+  }).join("");
+  $("#checkCard").innerHTML = `
+    <div class="cc-head">
+      <p class="cc-eyebrow">成就清单 · ${escapeHtml(list.emoji)}</p>
+      <h2 class="cc-title">${escapeHtml(list.title)}</h2>
+      <div class="cc-score"><b>${score}</b><span>/ ${total} 解锁</span></div>
+      <p class="cc-pct">${pctLine}</p>
+      ${rareLine}
+    </div>
+    <div class="cc-grid">${items}</div>
+    <div class="cc-watermark">🎴 pickpickpick.online · 极限二选一 · 成就清单</div>`;
+}
+
+async function downloadCheckCard() {
+  if (typeof html2canvas !== "function") { showToast("图片库未加载，请检查网络"); return; }
+  showToast("正在生成成就卡…");
+  try {
+    const canvas = await html2canvas($("#checkCard"), { backgroundColor: "#ffffff", scale: 2, logging: false, windowWidth: $("#checkCard").scrollWidth });
+    saveCanvas(canvas, `成就清单-${check.list.title}.png`);
+  } catch { showToast("生成失败，请再试一次"); }
+}
+
+/* ===================== 本命九宫格 ===================== */
+
+const GRID_SLOT_ORDER = [4, 0, 1, 2, 3, 5, 6, 7, 8]; // 第一个进正中 C 位
+let gridState = null;
+
+function startGrid(theme) {
+  gridState = { theme, picks: [], submitted: false };
+  $("#gridTitle").textContent = theme.title;
+  $("#gridEmoji").textContent = theme.emoji;
+  $("#gridConsensus").classList.add("hidden");
+  try { const f = $("#gridFiller"); if (f) f.value = localStorage.getItem("pickone-filler") || ""; } catch {}
+  showView($("#gridView"));
+  renderGrid();
+}
+
+function renderGrid() {
+  const picks = gridState.picks;
+  const cells = Array.from({ length: 9 }, (_, c) => {
+    const pi = GRID_SLOT_ORDER.indexOf(c);
+    const name = picks[pi];
+    const isC = c === 4;
+    if (name != null) {
+      return `<button class="grid-cell filled${isC ? " center" : ""}" data-pick="${pi}">${isC ? '<span class="grid-cpos">C位</span>' : ""}<span class="grid-cell-txt">${escapeHtml(name)}</span></button>`;
+    }
+    return `<div class="grid-cell empty${isC ? " center" : ""}">${isC ? '<span class="grid-cpos">C位</span>' : ""}</div>`;
+  }).join("");
+  const filler = ((($("#gridFiller") || {}).value) || "").trim();
+  $("#gridCard").innerHTML = `
+    <div class="grid-c-head">
+      <p class="grid-c-eyebrow">本命九宫格 · ${escapeHtml(gridState.theme.emoji)}</p>
+      <h2 class="grid-c-title">${escapeHtml(gridState.theme.title)}</h2>
+      ${filler ? `<p class="grid-c-by">by ${escapeHtml(filler)}</p>` : ""}
+    </div>
+    <div class="grid-3x3">${cells}</div>
+    <div class="grid-c-watermark">🎴 pickpickpick.online · 极限二选一 · 本命九宫格</div>`;
+  const pool = gridState.theme.items.filter(it => !picks.includes(it));
+  $("#gridPool").innerHTML = pool.length
+    ? pool.map(it => `<button class="grid-pool-chip" data-name="${escapeHtml(it)}">${escapeHtml(it)}</button>`).join("")
+    : `<p class="grid-pool-empty">候选都挑完啦。</p>`;
+  $("#gridCount").textContent = `已选 ${picks.length} / 9`;
+  $("#gridPoolCount").textContent = String(pool.length);
+}
+
+function gridAdd(name) {
+  if (gridState.picks.length >= 9) { showToast("九宫格满了，点格子里的项可以移除替换"); return; }
+  if (gridState.picks.includes(name)) return;
+  gridState.picks.push(name); renderGrid();
+}
+function gridRemove(pi) { gridState.picks.splice(pi, 1); renderGrid(); }
+
+async function downloadGridCard() {
+  if (typeof html2canvas !== "function") { showToast("图片库未加载，请检查网络"); return; }
+  if (!gridState.picks.length) { showToast("先挑至少一个本命"); return; }
+  renderGrid();
+  showToast("正在生成九宫格…");
+  try {
+    const c = await html2canvas($("#gridCard"), { backgroundColor: "#ffffff", scale: 2, logging: false, windowWidth: $("#gridCard").scrollWidth });
+    saveCanvas(c, `本命九宫格-${gridState.theme.title}.png`);
+  } catch { showToast("生成失败，请再试一次"); }
+}
+
+async function showGridConsensus() {
+  if (!gridState) return;
+  if (gridState.picks.length < 1) { showToast("先挑几个本命，再看大众"); return; }
+  const remoteId = gridState.theme.remoteId;
+  if (!window.PickOneDB.online || !remoteId) { showToast("大众本命需要联网题库，离线暂不支持"); return; }
+  const scope = "top9:" + remoteId;
+  const btn = $("#gridConsensusButton"); btn.disabled = true; const lbl = btn.textContent; btn.textContent = "统计中…";
+  try {
+    if (!gridState.submitted) {
+      gridState.submitted = true;
+      const rows = gridState.picks.map(it => ({ scope, item: it, bucket: "in" }));
+      rows.push({ scope, item: "__submissions", bucket: "n" });
+      await window.PickOneDB.bumpCounters(rows);
+    }
+    const counters = await window.PickOneDB.getCounters(scope);
+    let submissions = 0; const inCount = {};
+    counters.forEach(({ item, bucket, count }) => { count = Number(count); if (item === "__submissions") submissions += count; else if (bucket === "in") inCount[item] = count; });
+    const ranked = Object.entries(inCount).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    const panel = $("#gridConsensus"); panel.classList.remove("hidden");
+    if (!ranked.length || !submissions) { panel.innerHTML = `<p class="gc-empty">你是这个题库九宫格的先行者，还没有大众本命数据 🌱</p>`; return; }
+    const mine = new Set(gridState.picks);
+    panel.innerHTML = `<div class="gc-head"><b>全站最常进本命九宫格</b><small>基于 ${submissions} 份九宫格</small></div>` +
+      `<ol class="gc-list">${ranked.map(([it, c]) => `<li class="${mine.has(it) ? "gc-mine" : ""}"><span>${escapeHtml(it)}${mine.has(it) ? ' <b class="gc-tag">你也选了</b>' : ""}</span><span class="gc-pct">${Math.round(c / submissions * 100)}%</span></li>`).join("")}</ol>`;
+  } catch { showToast("大众本命加载失败，稍后再试"); }
+  finally { btn.disabled = false; btn.textContent = lbl; }
+}
+
 function showToast(message) {
   clearTimeout(toastTimer); $("#toast").textContent = message; $("#toast").classList.add("show");
   toastTimer = setTimeout(() => $("#toast").classList.remove("show"), 2200);
@@ -767,8 +1465,71 @@ function showToast(message) {
 $("#themeGrid").addEventListener("click", e => {
   const card = e.target.closest(".theme-card"); if (!card) return;
   if (card.dataset.create) openCreate();
-  else startGame(themes.find(t => t.id === card.dataset.theme));
+  else {
+    const theme = themes.find(t => t.id === card.dataset.theme);
+    if (playMode === "tier") startTierList(theme); else if (playMode === "grid") startGrid(theme); else startGame(theme);
+  }
 });
+$("#newThemesBoard").addEventListener("click", e => {
+  const card = e.target.closest(".new-theme-card"); if (!card) return;
+  const theme = themes.find(t => t.id === card.dataset.theme); if (!theme) return;
+  if (playMode === "tier") startTierList(theme); else startGame(theme);
+});
+
+// 玩法切换（二选一 / 梯度表 / OC 设定卡）
+document.querySelectorAll(".mode-tab").forEach(btn => btn.addEventListener("click", () => {
+  if (btn.dataset.mode === "oc") { window.PickOneOC && window.PickOneOC.open(); return; }
+  if (btn.dataset.mode === "check") { openCheck(); return; }
+  playMode = { tier: "tier", grid: "grid" }[btn.dataset.mode] || "battle";
+  document.querySelectorAll(".mode-tab").forEach(b => {
+    const on = b === btn && b.dataset.mode !== "oc" && b.dataset.mode !== "check";
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-selected", on ? "true" : "false");
+  });
+  $("#modeHint").textContent = playMode === "tier"
+    ? "选一个题库，把选项拖进 S/A/B/C/D 各档，生成你的梯度图。"
+    : playMode === "grid"
+    ? "选一个题库，挑出你的本命前 9，生成 3×3 九宫格。"
+    : "选一个题库，一路二选一选出唯一冠军。";
+}));
+
+// 梯度表：档位板点击（设当前档 / 退回已放选项）
+$("#tierBoard").addEventListener("click", e => {
+  const placed = e.target.closest(".tier-chip.placed");
+  if (placed) { returnToPool(placed.dataset.name); return; }
+  const label = e.target.closest(".tier-label");
+  if (label) { setActiveTier(label.dataset.tier); return; }
+  const slots = e.target.closest(".tier-slots");
+  if (slots) { setActiveTier(slots.dataset.tier); }
+});
+// 梯度表：池中选项点击 → 放入当前档
+$("#tierPool").addEventListener("click", e => {
+  const chip = e.target.closest(".tier-chip"); if (!chip) return;
+  placeInActive(chip.dataset.name);
+});
+$("#exitTierButton").addEventListener("click", () => showView($("#homeView")));
+$("#tierResetButton").addEventListener("click", resetTier);
+$("#tierDownloadButton").addEventListener("click", downloadTierCard);
+$("#tierConsensusButton").addEventListener("click", showTierConsensus);
+// 成就清单
+$("#checkGrid").addEventListener("click", e => { const c = e.target.closest(".check-card-pick"); if (c) startChecklist(c.dataset.list); });
+$("#checkItems").addEventListener("click", e => { const b = e.target.closest(".check-item"); if (b) toggleCheckItem(b); });
+$("#exitCheckButton").addEventListener("click", () => showView($("#homeView")));
+$("#checkBackPickerButton").addEventListener("click", openCheck);
+$("#checkSubmitButton").addEventListener("click", showCheckResult);
+$("#checkResetButton").addEventListener("click", () => { if (check) { check.checked.clear(); check.submitted = false; document.querySelectorAll("#checkItems .check-item.on").forEach(b => b.classList.remove("on")); updateCheckCounter(); } });
+$("#checkDownloadButton").addEventListener("click", downloadCheckCard);
+$("#checkEditButton").addEventListener("click", () => { $("#checkResultWrap").classList.add("hidden"); $("#checkForm").classList.remove("hidden"); window.scrollTo({ top: 0, behavior: "smooth" }); });
+// 本命九宫格
+$("#gridPool").addEventListener("click", e => { const c = e.target.closest(".grid-pool-chip"); if (c) gridAdd(c.dataset.name); });
+$("#gridCard").addEventListener("click", e => { const c = e.target.closest(".grid-cell.filled"); if (c) gridRemove(+c.dataset.pick); });
+$("#exitGridButton").addEventListener("click", () => showView($("#homeView")));
+$("#gridResetButton").addEventListener("click", () => { if (gridState) { gridState.picks = []; gridState.submitted = false; $("#gridConsensus").classList.add("hidden"); renderGrid(); } });
+$("#gridDownloadButton").addEventListener("click", downloadGridCard);
+$("#gridConsensusButton").addEventListener("click", showGridConsensus);
+$("#gridFiller")?.addEventListener("input", e => { try { localStorage.setItem("pickone-filler", e.target.value.trim()); } catch {} });
+$("#tierPlayBattleButton").addEventListener("click", () => { if (tier) startGame(tier.theme); });
+$("#tierFiller")?.addEventListener("input", e => { try { localStorage.setItem("pickone-filler", e.target.value.trim()); } catch {} });
 $("#themeSearchButton").addEventListener("click", applyThemeSearch);
 $("#themeSearch").addEventListener("input", applyThemeSearch);
 $("#themeSearch").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); applyThemeSearch(); } });
@@ -791,6 +1552,8 @@ $("#playAgainButton").addEventListener("click", replay);
 $("#downloadButton").addEventListener("click", downloadCard);
 $("#fillerName")?.addEventListener("input", e => { try { localStorage.setItem("pickone-filler", e.target.value.trim()); } catch {} });
 $("#shareButton").addEventListener("click", shareResult);
+$("#vsShareButton").addEventListener("click", shareVs);
+$("#vsDownloadButton").addEventListener("click", downloadVsCard);
 $("#customItems").addEventListener("input", updateItemCount);
 $("#createForm").addEventListener("submit", createTheme);
 $("#closeCreateButton").addEventListener("click", () => $("#createDialog").close());

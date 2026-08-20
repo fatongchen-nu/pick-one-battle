@@ -3,7 +3,7 @@
 更新时间：2026-08-16  
 当前主分支：`main`  
 GitHub：<https://github.com/fatongchen-nu/pick-one-battle>  
-线上地址：<https://pick-one-battle.vercel.app/>
+线上地址：<https://www.pickpickpick.online/>（旧的 `pick-one-battle.vercel.app` 已弃用；战报/梯度图页脚文字与内嵌二维码 `REPORT_QR` 均已改指新域名）
 
 > 本轮改动（战报改为浅色报纸风表格，与结果页「完整晋级路线」完全一致；同人女极限二选一署名 xhs@degree、用户投稿改为自动公开）
 > 尚在本地，请在本机终端 `git push origin main`；「自动公开」还需在 Supabase 执行下方「上线步骤」里的 RLS 策略。
@@ -18,9 +18,11 @@ GitHub：<https://github.com/fatongchen-nu/pick-one-battle>
 
 项目是无构建步骤的静态网页：
 
-- `index.html`：页面结构、三个主要视图和弹窗。
+- `index.html`：页面结构、各主要视图（首页 / 对局 / 结果 / 梯度表 / OC 设定卡）和弹窗。
 - `styles.css`：全部桌面端和移动端样式。
-- `app.js`：内置题库、淘汰赛状态、撤回、对阵树、分享、报纸风表格战报绘制、内嵌二维码。
+- `app.js`：内置题库、淘汰赛状态、撤回、对阵树、分享、报纸风表格战报绘制、内嵌二维码、梯度表排位、玩法切换。
+- `oc.js`：OC 设定卡（两套模板 schema + 通用控件引擎 + html2canvas 出图）。依赖全局 `saveCanvas`/`showView`/`showToast`（在 `app.js` 里）。
+- `html2canvas.min.js`：本地内置的 html2canvas 1.4.1（OC 卡出图用；已本地化，不再依赖 CDN）。
 - `data-service.js`：Supabase REST API 与本地存储适配层。
 - `config.js`：Supabase Project URL 与 Publishable key。
 - `supabase-schema.sql`：完整且可重复执行的数据库初始化/同步脚本。
@@ -57,6 +59,43 @@ python3 -m http.server 4173
 - 公开题库热度、冠军计数和社区排行榜。
 - 创建题库弹窗可通过右上角关闭按钮和 Escape 退出。
 - 首页底部有非营利与版权声明。
+- **冠军稀有度徽章（少数派钩子）**：用已有 `champion_counts` 算本局冠军占全站冠军票的比例 → 稀有度 SSR/SR/R/N
+  （`championRarity()`，<8% SSR / <18% SR / <33% R / 其余 N；总票<10 不显示）。结果页 hero 显示一行「你的冠军只有 X% 的人选到 · 稀有度」（`#rarityLine`），
+  战报图右上角盖一枚旋转稀有度印章（`downloadCard()` 里，按 `TIER_COLOR` 上色）。纯前端、零新增后端。
+- **三个入口**：首页题库区上方有「⚔️ 极限二选一 / 📊 梯度表排位 / 🎴 OC 设定卡」。前两个是 `playMode`（决定点题库卡的行为，复用同一套题库）；OC 设定卡点一下直接进 `#ocView`（与题库无关）。
+- **梯度表排位（`#tierView`）**：手机优先的点选式分档。点档位色块设为「当前档」，再点待分配池中的选项即放入该档；
+  点已放好的选项退回池。档位为 S/A/B/C/D（热→冷配色，见 `app.js` 的 `TIERS`）。
+  「生成梯度图」用 `downloadTierCard()` 画一张**报纸风梯度图**（左侧彩色档位块 + 右侧选项药丸自动换行，
+  页眉标题/填表人/日期、页脚二维码），复用 `saveCanvas` 存图/分享，与战报同款风格。
+  出个人梯度图为纯前端。**梯度共识（你 vs 大众梯度）**：点「🌐 看大众梯度」会把你的分档提交到通用计数表并取回全站数据，
+  算出每个选项的「大众档」（`tierConsensus()`），对比出你的独特度与最大分歧项（`showTierConsensus()`，面板 `#tierConsensus`）。
+  需要联网 + 题库有 `remoteId`；离线或无数据时提示或显示"先行者"。
+
+社交对比通用后端（见 `supabase-social.sql`，梯度共识/小众引擎/成就清单共用）：
+  一张 `stat_counters(scope,item,bucket,count)` 表 + `bump_counters(jsonb)` 自增函数（SECURITY DEFINER、每条固定 +1、单次≤300 条防刷）。
+  前端封装在 `data-service.js` 的 `bumpCounters(rows)` / `getCounters(scope, item?)`。**上线前需在 Supabase 执行一次 `supabase-social.sql`。**
+
+- **成就清单（`#checkView`，正确版 bingo）**：网站供给主题清单（`CHECKLISTS`，目前 3 份：同人女鉴定 / 音乐剧人 / 成年人碎掉瞬间），
+  点勾符合项 → `showCheckResult()` 提交并聚合，算出「X/N 解锁」「解锁数超过 Y% 的人」（分数分布百分位）和你解锁的冷门成就（解锁率最低几项）。
+  用 `stat_counters` 的 `check:<listId>` 作用域（item=选项/`__submissions`/`__score`），**复用同一张表，无需新增 SQL**。
+  结果做成一张 `#checkCard` 卡片，`downloadCheckCard()` 用 html2canvas 出图。离线可玩、只出个人分数无百分位。
+
+- **双人对比 / 口味契合度（1 带 1 裂变）**：二选一结果页多了「🤝 拉朋友对比」，复制 `#vs=<resultId>`（在线）或 `#vsd=<编码>`（快照）链接。
+  朋友打开 → `beginVs()` 载入对方结果、让本人玩同一题库；玩完后 `renderVsComparison()` 算契合度（`vsCompare()`：按每个选项"走到第几轮"的 `itemScores` 归一化后比对），
+  展示双方冠军、都爱/分歧项，`downloadVsCard()` 用 html2canvas 出「口味契合度」图。**无需新增 SQL**（复用已有分享结果）。
+
+- **本命九宫格（`#gridView`，`playMode="grid"`）**：选题库后从候选点选前 9（第一个进正中 C 位，`GRID_SLOT_ORDER`），
+  `#gridCard` 是 3×3 卡片也是出图目标（`downloadGridCard()` 用 html2canvas）。「🌐 看大众本命」用 `stat_counters` 的 `top9:<remoteId>` 作用域
+  聚合"全站最常进九宫格"的选项（`showGridConsensus()`），标出你也选的。**复用同一张表，无需新增 SQL。**
+- **OC 设定卡（`#ocView`，`oc.js`）**：两套模板（`是这样的TA` / RPG 风 `人物信息`），先选模板再填。
+  数据驱动：每套模板是一个 section/field 的 schema，`TEMPLATES` 里维护；一个通用引擎把它渲染成**所见即所得**的可编辑卡片。
+  控件类型：文本 / 多行 / 单选(choice+其他) / 多选(checks) / 双极性格滑条(单点) / 0–5 能力值 / 六边形雷达(SVG，点各轴打分自动重画多边形) / 二维关系网(点方框放点) / 头像上传(FileReader→dataURL) / 是否+说明。
+  「生成设定卡图片」用 **html2canvas** 把 `#ocCard` 截成 PNG，再交给 `saveCanvas` 存图/分享。纯前端、不写库。
+  新增/改模板字段：改 `oc.js` 的 `TEMPLATES` 即可，引擎与样式无需动。
+- **本周新题榜（`#newThemesSection`，`renderNewThemes()`）**：首页 hero 下方展示最近 7 天创建的公开题库（最新在前，最多 8 个），
+  横向滑动卡片、NEW 徽标 + 相对时间（今天/昨天/N 天前），点卡片按当前玩法开局。
+  创建时间来源：远程题库用 `created_at`（`data-service.js` 的 `listPublicThemes` 已加进 select，并改为 `order=created_at.desc`），
+  用户自建题库从 `id`（`custom-<时间戳>`）解析；内置题库无创建时间、永远不进此榜。没有本周新题时整块隐藏。
 
 ## 4. 当前内置题库
 
@@ -125,8 +164,8 @@ python3 -m http.server 4173
 - `pickone-stats`：离线游玩次数和冠军计数。
 - `pickone-results`：离线结果快照。
 
-战报里的二维码是内嵌的静态 PNG（`app.js` 顶部 `REPORT_QR` 常量），指向线上地址。
-它不依赖网络、不会污染 canvas 导出。**如果线上域名变化，需要重新生成该二维码并替换常量。**
+战报/梯度图里的二维码是内嵌的静态 PNG（`app.js` 顶部 `REPORT_QR` 常量），当前指向 <https://www.pickpickpick.online/>。
+它不依赖网络、不会污染 canvas 导出。**如果线上域名再变化，需要重新生成该二维码并替换常量，同时改页脚显示的网址文字（`downloadCard()` 与 `downloadTierCard()` 各有一处）。**
 
 ## 7. GitHub 与 Vercel
 
@@ -177,7 +216,7 @@ git@github.com:fatongchen-nu/pick-one-battle.git
 - 不要删除或改变已经上线题库的固定 UUID，否则旧结果和统计会断开。
 - 修改内置题库时，始终同步更新 `app.js` 与 `supabase-schema.sql`（题库内容、作者、初始数据）。
 - `supabase-schema.sql` 的 upsert 有意不覆盖热度与冠军票数；重置初始数据用 `supabase-reset-seed-stats.sql`。
-- 战报二维码写死在 `app.js` 的 `REPORT_QR`；换域名需重新生成替换。
+- 战报/梯度图二维码写死在 `app.js` 的 `REPORT_QR`（现指向 pickpickpick.online）；换域名需重新生成替换，并同步改两处页脚网址文字。
 - 首页 hero 的 VS 徽标位置在 `styles.css` 的 `.versus-burst`（`left` / `top` 百分比），可微调。
 - 战报现为浅色报纸风表格，与结果页「完整晋级路线」同款；宽度随轮数横向展开（`W = 两侧留白 + L*colW`），
   选项/轮数多时会偏横向，配色与尺寸分档见 `downloadCard()` 里的 `C` 常量与 `slotH/gap/font` 分档。

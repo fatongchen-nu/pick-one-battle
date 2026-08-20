@@ -47,6 +47,17 @@
           </div>
         </div>
 
+        <section class="new-themes-section hidden" id="newThemesSection" aria-labelledby="newThemesTitle">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow muted">FRESH THIS WEEK</p>
+              <h2 id="newThemesTitle">🔥 本周新题榜</h2>
+            </div>
+            <p>大家这几天刚投稿的新题库，抢先来玩、给它送出第一批冠军票。</p>
+          </div>
+          <div class="new-themes-board" id="newThemesBoard"></div>
+        </section>
+
         <section class="themes-section" aria-labelledby="themesTitle">
           <div class="section-heading">
             <div>
@@ -54,6 +65,14 @@
               <h2 id="themesTitle">今天纠结什么？</h2>
             </div>
             <p>从现成题库开始，也可以自己建一个来比。</p>
+          </div>
+          <div class="mode-tabs" role="tablist" aria-label="玩法">
+            <button class="mode-tab active" data-mode="battle" role="tab" aria-selected="true">⚔️ 极限二选一</button>
+            <button class="mode-tab" data-mode="tier" role="tab" aria-selected="false">📊 梯度表排位</button>
+            <button class="mode-tab" data-mode="check" role="tab" aria-selected="false">✅ 成就清单</button>
+            <button class="mode-tab" data-mode="grid" role="tab" aria-selected="false">🔲 本命九宫格</button>
+            <button class="mode-tab" data-mode="oc" role="tab" aria-selected="false">🎴 OC 设定卡</button>
+            <span class="mode-hint" id="modeHint">选一个题库，一路二选一选出唯一冠军。</span>
           </div>
           <div class="theme-toolbar">
             <div class="theme-search" role="search">
@@ -142,6 +161,7 @@
           <p class="result-kicker">你的「<span id="resultTheme"></span>」冠军是</p>
           <h1 id="winnerName"></h1>
           <p class="result-path" id="resultPath"></p>
+          <p class="rarity-line" id="rarityLine" hidden></p>
           <div class="filler-row">
             <label for="fillerName">填表人 by</label>
             <input id="fillerName" type="text" maxlength="24" placeholder="你的昵称（可留空）" autocomplete="off" />
@@ -149,9 +169,15 @@
           <div class="result-actions">
             <button class="white-button" id="downloadButton">↓ 下载完整战报</button>
             <button class="outline-light-button" id="shareButton">↗ 复制永久链接</button>
+            <button class="outline-light-button" id="vsShareButton">🤝 拉朋友对比</button>
           </div>
           <button class="play-again" id="playAgainButton">再玩一次</button>
         </div>
+        <section class="vs-wrap hidden" id="vsPanel" aria-labelledby="vsTitle">
+          <div class="vs-heading"><p class="eyebrow muted">YOU vs FRIEND</p><h2 id="vsTitle">你和朋友的口味有多合</h2></div>
+          <div class="vs-card" id="vsCard"></div>
+          <div class="vs-actions"><button class="primary-button large" id="vsDownloadButton">↓ 生成对比图</button></div>
+        </section>
         <section class="champion-share-wrap hidden" id="championShareWrap" aria-labelledby="championShareTitle">
           <div class="champion-share-heading">
             <div><p class="eyebrow muted">CROWD FAVORITES</p><h2 id="championShareTitle">这个题库，大家都选了谁</h2></div>
@@ -172,7 +198,136 @@
           </div>
         </section>
       </section>
+
+      <section id="tierView" class="view tier-view hidden" aria-live="polite">
+        <div class="game-topbar">
+          <button class="back-button" id="exitTierButton">← 退出</button>
+          <div class="game-title-wrap"><span id="tierEmoji">📊</span><strong id="tierTitle">梯度表</strong></div>
+          <button class="text-button" id="tierResetButton">重置</button>
+        </div>
+
+        <div class="tier-wrap">
+          <div class="tier-intro">
+            <p><b>点一个档位</b>选中它，再点下面的选项就放进去；点已放好的选项可退回待分配。</p>
+            <small id="tierProgress">已分配 0 / 0</small>
+          </div>
+
+          <div class="tier-board" id="tierBoard"></div>
+
+          <div class="tier-pool-head"><span>待分配</span><small id="tierPoolCount">0</small></div>
+          <div class="tier-pool" id="tierPool"></div>
+
+          <div class="filler-row tier-filler">
+            <label for="tierFiller">填表人 by</label>
+            <input id="tierFiller" type="text" maxlength="24" placeholder="你的昵称（可留空）" autocomplete="off" />
+          </div>
+          <div class="tier-actions">
+            <button class="primary-button large" id="tierDownloadButton">↓ 生成梯度图</button>
+            <button class="secondary-button large" id="tierConsensusButton">🌐 看大众梯度</button>
+            <button class="secondary-button large" id="tierPlayBattleButton">改玩二选一</button>
+          </div>
+          <div class="tier-consensus hidden" id="tierConsensus"></div>
+        </div>
+      </section>
+
+      <section id="checkView" class="view check-view hidden">
+        <div class="game-topbar">
+          <button class="back-button" id="exitCheckButton">← 退出</button>
+          <div class="game-title-wrap"><span id="checkEmoji">✅</span><strong id="checkTopTitle">成就清单</strong></div>
+          <button class="text-button" id="checkBackPickerButton" hidden>换清单</button>
+        </div>
+
+        <div class="check-picker" id="checkPicker">
+          <div class="section-heading">
+            <div><p class="eyebrow muted">SELF CHECK</p><h2>选一份清单，看看你解锁了几个</h2></div>
+            <p>勾中你符合的项，自动算出你的解锁数、和「超过多少人」，一键生成成就卡。</p>
+          </div>
+          <div class="check-grid" id="checkGrid"></div>
+        </div>
+
+        <div class="check-editor hidden" id="checkEditor">
+          <div class="check-form" id="checkForm">
+            <div class="check-formhead"><b id="checkFormTitle"></b><span class="check-counter" id="checkCounter">已解锁 0 / 0</span></div>
+            <div class="check-items" id="checkItems"></div>
+            <div class="check-actions">
+              <button class="primary-button large" id="checkSubmitButton">看结果</button>
+              <button class="secondary-button large" id="checkResetButton">清空</button>
+            </div>
+          </div>
+          <div class="check-result-wrap hidden" id="checkResultWrap">
+            <div class="check-card" id="checkCard"></div>
+            <div class="check-actions">
+              <button class="primary-button large" id="checkDownloadButton">↓ 生成成就卡图片</button>
+              <button class="secondary-button large" id="checkEditButton">继续修改</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="gridView" class="view grid-view hidden" aria-live="polite">
+        <div class="game-topbar">
+          <button class="back-button" id="exitGridButton">← 退出</button>
+          <div class="game-title-wrap"><span id="gridEmoji">🔲</span><strong id="gridTitle">本命九宫格</strong></div>
+          <button class="text-button" id="gridResetButton">重置</button>
+        </div>
+        <div class="grid-wrap">
+          <div class="grid-intro"><p><b>点候选</b>加入你的本命九宫格（第一个进正中 C 位）；点格子里的项可移除。</p><small id="gridCount">已选 0 / 9</small></div>
+          <div class="grid-card" id="gridCard"></div>
+          <div class="grid-pool-head"><span>候选</span><small id="gridPoolCount">0</small></div>
+          <div class="grid-pool" id="gridPool"></div>
+          <div class="filler-row grid-filler">
+            <label for="gridFiller">填表人 by</label>
+            <input id="gridFiller" type="text" maxlength="24" placeholder="你的昵称（可留空）" autocomplete="off" />
+          </div>
+          <div class="grid-actions">
+            <button class="primary-button large" id="gridDownloadButton">↓ 生成九宫格图</button>
+            <button class="secondary-button large" id="gridConsensusButton">🌐 看大众本命</button>
+          </div>
+          <div class="grid-consensus hidden" id="gridConsensus"></div>
+        </div>
+      </section>
+
+      <section id="ocView" class="view oc-view hidden">
+        <div class="game-topbar">
+          <button class="back-button" id="exitOcButton">← 退出</button>
+          <div class="game-title-wrap"><span>🎴</span><strong id="ocTopTitle">OC 设定卡</strong></div>
+          <button class="text-button" id="ocPickerButton" hidden>换模板</button>
+        </div>
+
+        <div class="oc-picker" id="ocPicker">
+          <div class="section-heading">
+            <div><p class="eyebrow muted">CHARACTER SHEET</p><h2>选一个设定卡模板</h2></div>
+            <p>填好基础信息、点性格滑条与能力值，一键生成图片，方便晒 OC / 本命。</p>
+          </div>
+          <div class="oc-template-grid">
+            <button class="oc-template-card" data-tpl="etoile">
+              <span class="emoji">🪶</span>
+              <h3>是这样的TA</h3>
+              <p>问答式人设卡 · 喜好 / 性格滑条 / 能力值</p>
+              <span class="oc-tpl-by">模板 by Etoile</span>
+            </button>
+            <button class="oc-template-card" data-tpl="rpg">
+              <span class="emoji">⚔️</span>
+              <h3>人物信息 · RPG 设定卡</h3>
+              <p>六边形战力雷达 / 人际关系网 / 战斗风格</p>
+              <span class="oc-tpl-by">RPG 风人设卡</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="oc-editor hidden" id="ocEditor">
+          <div class="oc-hint">填空处可留白，性格/能力值点一下就能设定；头像点方框上传。填好点下面生成图片。</div>
+          <div class="oc-card" id="ocCard"></div>
+          <div class="oc-actions">
+            <button class="primary-button large" id="ocDownloadButton">↓ 生成设定卡图片</button>
+            <button class="secondary-button large" id="ocResetButton">清空重填</button>
+            <button class="text-button" id="ocBackPickerButton">← 换个模板</button>
+          </div>
+        </div>
+      </section>
     </main>
+
+    <input type="file" id="ocPhotoInput" accept="image/*" hidden />
 
     <dialog id="createDialog" class="modal">
       <form method="dialog" id="createForm">
@@ -203,8 +358,10 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <canvas id="shareCanvas" width="1080" height="1350" hidden></canvas>
+    <script src="./html2canvas.min.js"></script>
     <script src="./config.js"></script>
     <script src="./data-service.js"></script>
     <script src="./app.js"></script>
+    <script src="./oc.js"></script>
   </body>
 </html>

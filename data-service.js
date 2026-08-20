@@ -34,12 +34,12 @@
 
     async listPublicThemes() {
       if (!online) return [];
-      const rows = await request("brackets?visibility=eq.public&status=eq.approved&select=id,title,emoji,description,items,author_name,play_count,champion_counts&order=play_count.desc&limit=100");
+      const rows = await request("brackets?visibility=eq.public&status=eq.approved&select=id,title,emoji,description,items,author_name,play_count,champion_counts,created_at&order=created_at.desc&limit=100");
       return rows.map(row => ({
         id: `remote-${row.id}`, remoteId: row.id, title: row.title, emoji: row.emoji,
         description: row.description || "社区公开题库", items: row.items,
         author: row.author_name || "匿名玩家", plays: row.play_count || 0,
-        championStats: row.champion_counts || {}, public: true
+        championStats: row.champion_counts || {}, public: true, createdAt: row.created_at
       }));
     },
 
@@ -90,6 +90,25 @@
         initialItems: row.initial_items, rounds: row.rounds,
         winner: row.winner, createdAt: row.created_at
       };
+    },
+
+    // 通用社交计数：梯度共识 / 小众引擎 / 成就清单共用 public.stat_counters + bump_counters()
+    async bumpCounters(rows) {
+      if (!online || !rows || !rows.length) return;
+      try {
+        await request("rpc/bump_counters", {
+          method: "POST", headers: { Prefer: "return=minimal" },
+          body: JSON.stringify({ rows })
+        });
+      } catch { /* 计数失败不影响主流程 */ }
+    },
+    async getCounters(scope, item) {
+      if (!online) return [];
+      try {
+        const q = item ? `&item=eq.${encodeURIComponent(item)}` : "";
+        const rows = await request(`stat_counters?scope=eq.${encodeURIComponent(scope)}${q}&select=item,bucket,count&limit=2000`);
+        return rows || [];
+      } catch { return []; }
     }
   };
 })();
